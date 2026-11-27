@@ -1,0 +1,2531 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ngâm Cà Phê — Hệ Thống Quản Lý & POS Vận Hành</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                    },
+                    colors: {
+                        coffee: {
+                            50: '#FDFBF7',
+                            100: '#F7F0E6',
+                            200: '#EBD9C3',
+                            300: '#D6B997',
+                            400: '#B88F68',
+                            500: '#8C5A32',
+                            600: '#6F4121',
+                            700: '#4A2E1B',
+                            800: '#331F12',
+                            900: '#1F120A',
+                            950: '#140B06',
+                        },
+                        'brand-indigo': '#4F46E5',
+                        amberWood: '#D97706',
+                        cream: '#FDFBF7'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #F7F0E6;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #D6B997;
+            border-radius: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #B88F68;
+        }
+        .mobile-nav { background:#5b3823; color:#fff7ed; border:1px solid #795238; border-radius:10px; padding:10px; text-align:left; font-size:12px; font-weight:700; }
+        .mobile-nav:hover { background:#70472d; }
+        .active-tab {
+            background-color: #4A2E1B !important;
+            color: #FFFFFF !important;
+            box-shadow: 0 4px 12px rgba(74, 46, 27, 0.3);
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+            animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        @media print {
+            body * { visibility: hidden; }
+            #printableReceipt, #printableReceipt * { visibility: visible; }
+            #printableReceipt { position: absolute; left: 0; top: 0; width: 100%; }
+        }
+    </style>
+<!-- Photo references used for visual mockup: Vietcetera, ABROADER, Goodsolutions, Behance, House of Phin, SnapCalorie, Thanhnien, MoMo, Trip.com/Broadsheet. Replace with the cafe's own licensed photographs before production. -->
+</head>
+<body class="bg-coffee-50 font-sans text-coffee-900 min-h-screen flex flex-col">
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm pointer-events-none"></div>
+
+    <header class="bg-coffee-900 text-coffee-100 sticky top-0 z-50 shadow-md border-b border-coffee-800">
+        <div class="bg-coffee-950 px-4 py-1.5 border-b border-coffee-800 text-xs flex flex-wrap justify-between items-center gap-2">
+            <div class="flex items-center gap-3">
+                <span class="inline-flex items-center gap-1.5 font-mono text-amber-400 bg-coffee-900 px-2.5 py-0.5 rounded border border-amber-600/30">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    https://ngamcaphe.vn
+                </span>
+                <span class="hidden sm:inline text-coffee-300">| Hệ thống quản lý vận hành quán Ngâm Cà Phê</span>
+            </div>
+            <div class="flex items-center gap-3 sm:gap-4 text-coffee-200">
+                <button onclick="openSystemSyncModal()" class="inline-flex items-center gap-1.5 bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-700/50 px-2.5 py-0.5 rounded-full text-[11px] font-semibold transition" title="Quản lý CSDL & Đồng bộ đa thiết bị">
+                    <i class="fa-solid fa-database text-emerald-400"></i>
+                    <span id="syncStatusText">CSDL & Đồng bộ: Sẵn sàng</span>
+                </button>
+                <span><i class="fa-solid fa-clock text-amber-400 mr-1"></i> <span id="clockDisplay">00:00:00</span></span>
+                <span class="hidden md:inline"><i class="fa-solid fa-location-dot text-amber-400 mr-1"></i> 193/19 Nam Kỳ Khởi Nghĩa, Q.3</span>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 py-2.5 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchModule('pos')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-coffee-700 to-amber-600 flex items-center justify-center text-amber-200 shadow-lg shadow-coffee-900/50 ring-1 ring-amber-400/30">
+                    <i class="fa-solid fa-hourglass-half text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-lg tracking-tight text-white flex items-center gap-1.5">
+                        NGÂM <span class="text-amber-400 font-serif italic">Cà Phê</span>
+                    </h1>
+                    <p class="text-[10px] text-coffee-300 tracking-wider font-semibold">193/19 NAM KỲ KHỞI NGHĨA - Q.3</p>
+                </div>
+            </div>
+
+            <nav class="hidden lg:flex items-center bg-coffee-800/90 p-1.5 rounded-2xl border border-coffee-700/60 shadow-inner max-w-[760px] overflow-x-auto custom-scrollbar">
+                <button onclick="switchModule('dashboard')" id="nav-dashboard" class="module-nav-btn active-tab px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap"><i class="fa-solid fa-chart-line mr-1"></i>Tổng quan</button>
+                <button onclick="switchModule('pos')" id="nav-pos" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-cash-register mr-1"></i>Bán hàng POS</button>
+                <button onclick="switchModule('tables')" id="nav-tables" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-chair mr-1"></i>Quản lý bàn</button>
+                <button onclick="switchModule('inventory')" id="nav-inventory" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-boxes-stacked mr-1"></i>Kho</button>
+                <button onclick="switchModule('procurement')" id="nav-procurement" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-truck-fast mr-1"></i>Nhập hàng</button>
+                <button onclick="switchModule('expenses')" id="nav-expenses" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-wallet mr-1"></i>Chi phí</button>
+                <button onclick="switchModule('staffplus')" id="nav-staffplus" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-users mr-1"></i>Nhân sự</button>
+                <button onclick="switchModule('attendance')" id="nav-attendance" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-user-clock mr-1"></i>Chấm công</button>
+                <button onclick="switchModule('schedule')" id="nav-schedule" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-calendar-days mr-1"></i>Lịch làm</button>
+                <button onclick="switchModule('payroll')" id="nav-payroll" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-file-invoice-dollar mr-1"></i>Tính lương</button>
+                <button onclick="switchModule('reports')" id="nav-reports" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-chart-pie mr-1"></i>Báo cáo</button>
+                <button onclick="switchModule('store')" id="nav-store" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-address-book mr-1"></i>Liên hệ</button>
+                <button onclick="switchModule('settings')" id="nav-settings" class="module-nav-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap text-coffee-200"><i class="fa-solid fa-gear mr-1"></i>Cài đặt</button>
+            </nav>
+
+            <!-- User Auth & Role Switcher -->
+            <div class="flex items-center gap-2.5">
+                <div onclick="openAuthModal()" class="cursor-pointer flex items-center gap-2.5 bg-coffee-800/90 hover:bg-coffee-700/90 px-3 py-1.5 rounded-xl border border-coffee-700 transition">
+                    <div class="hidden sm:flex flex-col text-right">
+                        <span id="currentUserName" class="text-xs font-bold text-white">Quản Lý Trưởng</span>
+                        <span id="currentUserRoleBadge" class="text-[10px] text-amber-300 font-semibold bg-amber-400/10 px-2 py-0.5 rounded-full inline-block border border-amber-400/20">Toàn quyền quản trị</span>
+                    </div>
+                    <div id="currentUserAvatar" class="w-9 h-9 rounded-full bg-coffee-600 border border-amber-400 flex items-center justify-center text-amber-200 font-bold text-xs shadow">
+                        QL
+                    </div>
+                </div>
+                <button onclick="openAuthModal()" class="bg-amber-500 hover:bg-amber-400 text-coffee-950 font-bold px-2.5 py-2 rounded-xl text-xs shadow transition flex items-center gap-1" title="Đăng nhập / Đổi tài khoản phân quyền">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    <span class="hidden xl:inline">Tài Khoản</span>
+                </button>
+                <button onclick="toggleMobileMenu()" class="lg:hidden text-coffee-200 hover:text-white p-2">
+                    <i class="fa-solid fa-bars text-xl"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="mobileMenu" class="hidden lg:hidden bg-coffee-800 border-t border-coffee-700 px-4 py-3 grid grid-cols-2 gap-2">
+            <button onclick="switchModule('dashboard');toggleMobileMenu()" class="mobile-nav">Tổng quan</button>
+            <button onclick="switchModule('pos');toggleMobileMenu()" class="mobile-nav">Bán hàng POS</button>
+            <button onclick="switchModule('tables');toggleMobileMenu()" class="mobile-nav">Quản lý bàn</button>
+            <button onclick="switchModule('inventory');toggleMobileMenu()" class="mobile-nav">Quản lý kho</button>
+            <button onclick="switchModule('procurement');toggleMobileMenu()" class="mobile-nav">Nhà cung cấp & nhập hàng</button>
+            <button onclick="switchModule('expenses');toggleMobileMenu()" class="mobile-nav">Quản lý chi phí</button>
+            <button onclick="switchModule('staffplus');toggleMobileMenu()" class="mobile-nav">Nhân sự</button>
+            <button onclick="switchModule('store');toggleMobileMenu()" class="mobile-nav">Địa chỉ & liên hệ</button>
+            <button onclick="switchModule('attendance');toggleMobileMenu()" class="mobile-nav">Chấm công</button>
+            <button onclick="switchModule('schedule');toggleMobileMenu()" class="mobile-nav">Lịch làm việc</button>
+            <button onclick="switchModule('payroll');toggleMobileMenu()" class="mobile-nav">Tính lương</button>
+            <button onclick="switchModule('reports');toggleMobileMenu()" class="mobile-nav">Báo cáo thống kê</button>
+            <button onclick="switchModule('settings');toggleMobileMenu()" class="mobile-nav">Cài đặt hệ thống</button>
+            <button onclick="openSystemSyncModal();toggleMobileMenu()" class="mobile-nav col-span-2 text-emerald-200">Sao lưu & đồng bộ dữ liệu</button>
+        </div>
+    </header>
+
+    <!-- Role Permission Notice Banner (Displayed when logged in with restricted role or logged out) -->
+    <div id="roleBanner" class="hidden bg-amber-100 border-b border-amber-300 text-amber-950 px-4 py-2 text-xs">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+            <div class="flex items-center gap-2">
+                <i class="fa-solid fa-shield-halved text-amber-700"></i>
+                <span id="roleBannerText" class="font-semibold">Bạn đang truy cập với quyền hạn giới hạn.</span>
+            </div>
+            <button onclick="openAuthModal()" class="text-coffee-800 underline font-bold hover:text-coffee-950">Đổi tài khoản / Đăng nhập Quản lý</button>
+        </div>
+    </div>
+
+    <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-5">
+
+        <!-- MODULE 1: POS BÁN HÀNG -->
+        <section id="module-pos" class="module-section hidden animate-fadeIn">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <div class="lg:col-span-7 xl:col-span-8 space-y-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-coffee-200/80 space-y-3">
+                        <div class="flex flex-col sm:flex-row gap-3 justify-between items-center">
+                            <div class="relative w-full sm:w-72">
+                                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-coffee-400 text-sm"></i>
+                                <input type="text" id="posSearchInput" onkeyup="filterProducts()" placeholder="Tìm món phin ngâm, cold brew..." class="w-full pl-10 pr-4 py-2 rounded-xl border border-coffee-200 focus:outline-none focus:ring-2 focus:ring-coffee-500 focus:border-coffee-600 text-sm bg-coffee-50">
+                            </div>
+                            <div class="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 custom-scrollbar">
+                                <button onclick="openOrderHistoryModal()" class="bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 text-xs font-bold rounded-xl px-3 py-2 whitespace-nowrap flex items-center gap-1.5 transition">
+                                    <i class="fa-solid fa-receipt"></i> Lịch Sử Đơn (<span id="orderHistoryCount">0</span>)
+                                </button>
+                                <span class="text-xs font-bold text-coffee-500 uppercase tracking-wider whitespace-nowrap">Khu vực:</span>
+                                <select id="tableSelect" onchange="updateCartTableLabel()" class="bg-coffee-100 border border-coffee-300 text-coffee-900 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none">
+                                    <option value="Sân Vườn Mộc">Bàn Sân Vườn (Trệt)</option>
+                                    <option value="Bàn Gỗ 01">Bàn Gỗ 01 (Trong nhà)</option>
+                                    <option value="Bàn Gỗ 02">Bàn Gỗ 02 (Trong nhà)</option>
+                                    <option value="Góc Ban Công">Góc Ban Công (Tầng 1)</option>
+                                    <option value="Mang Về" selected>Mang Về (Take-away)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 overflow-x-auto pb-1 custom-scrollbar" id="categoryContainer">
+                            <button onclick="selectCategory('all', event)" class="cat-btn bg-coffee-700 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm transition">Tất Cả Món</button>
+                            <button onclick="selectCategory('signature', event)" class="cat-btn bg-coffee-100 text-coffee-800 hover:bg-coffee-200 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">⭐ Signature Ngâm</button>
+                            <button onclick="selectCategory('coffee', event)" class="cat-btn bg-coffee-100 text-coffee-800 hover:bg-coffee-200 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">☕ Cà Phê Truyền Thống</button>
+                            <button onclick="selectCategory('tea', event)" class="cat-btn bg-coffee-100 text-coffee-800 hover:bg-coffee-200 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">🍵 Trà & Thảo Mộc</button>
+                            <button onclick="selectCategory('snack', event)" class="cat-btn bg-coffee-100 text-coffee-800 hover:bg-coffee-200 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition">🥐 Bánh & Quà Quán</button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-3.5" id="productGrid"></div>
+                  <p class="text-[10px] text-slate-500 mt-2">Ảnh sản phẩm là ảnh tham khảo thực tế từ các nguồn công khai, chưa phải ảnh chụp xác nhận của Ngâm Cà Phê. Nên thay bằng ảnh món thật của quán trước khi đưa vào sử dụng chính thức.</p>
+                </div>
+
+                <div class="lg:col-span-5 xl:col-span-4">
+                    <div class="bg-white rounded-2xl shadow-sm border border-coffee-200/80 p-4 sticky top-20 space-y-4 flex flex-col min-h-[540px] lg:h-[calc(100vh-110px)]">
+                        <div class="flex items-center justify-between border-b border-coffee-100 pb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-lg bg-coffee-100 text-coffee-700 flex items-center justify-center font-bold">
+                                    <i class="fa-solid fa-mug-saucer"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-coffee-900 text-sm">Đơn Hàng Hiện Tại</h3>
+                                    <p class="text-[11px] text-coffee-500" id="cartTableDisplay">Khu vực: Mang Về</p>
+                                </div>
+                            </div>
+                            <button onclick="clearCart()" class="text-xs text-rose-600 hover:text-rose-800 font-semibold flex items-center gap-1 bg-rose-50 px-2.5 py-1.5 rounded-lg border border-rose-100 transition">
+                                <i class="fa-solid fa-trash-can"></i> Xóa đơn
+                            </button>
+                        </div>
+
+                        <div class="flex-1 overflow-y-auto space-y-3 custom-scrollbar pr-1" id="cartItemList">
+                            <div id="emptyCartState" class="h-full flex flex-col items-center justify-center text-center p-6 text-coffee-400">
+                                <div class="w-16 h-16 bg-coffee-50 rounded-full flex items-center justify-center mb-3 border border-coffee-200">
+                                    <i class="fa-solid fa-coffee text-2xl text-coffee-400"></i>
+                                </div>
+                                <p class="text-sm font-bold text-coffee-700">Chưa có món nào được chọn</p>
+                                <p class="text-xs mt-1">Chọn từ thực đơn Ngâm Cà Phê để lên đơn</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-coffee-50 p-3.5 rounded-xl border border-coffee-200/80 space-y-2 text-xs">
+                            <div class="flex gap-2">
+                                <input type="text" id="voucherInput" placeholder="Mã ưu đãi (NGAM10)" class="uppercase px-3 py-1.5 bg-white border border-coffee-200 rounded-lg w-full text-xs focus:outline-none focus:border-coffee-600">
+                                <button onclick="applyVoucher()" class="bg-coffee-800 hover:bg-coffee-900 text-amber-200 font-bold px-3 py-1.5 rounded-lg text-xs whitespace-nowrap">Áp Dụng</button>
+                            </div>
+
+                            <div class="pt-2 border-t border-coffee-200 space-y-1.5">
+                                <div class="flex justify-between text-coffee-600">
+                                    <span>Tạm tính:</span>
+                                    <span class="font-semibold text-coffee-800" id="summarySubtotal">0đ</span>
+                                </div>
+                                <div class="flex justify-between text-emerald-700">
+                                    <span>Giảm giá:</span>
+                                    <span class="font-semibold" id="summaryDiscount">-0đ</span>
+                                </div>
+                                <div class="flex justify-between text-coffee-600">
+                                    <span>Thuế VAT (8%):</span>
+                                    <span class="font-semibold text-coffee-800" id="summaryVat">0đ</span>
+                                </div>
+                                <div class="flex justify-between text-sm font-extrabold text-coffee-900 pt-1.5 border-t border-coffee-200">
+                                    <span>TỔNG CỘNG THANH TOÁN:</span>
+                                    <span class="text-coffee-700 text-base" id="summaryTotal">0đ</span>
+                                </div>
+                            </div>
+
+                            <div class="pt-2 border-t border-coffee-200 grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block text-[10px] text-coffee-500 font-bold mb-1">TIỀN KHÁCH ĐƯA</label>
+                                    <input type="number" id="cashReceivedInput" oninput="calculateChange()" placeholder="0" class="w-full px-2.5 py-1.5 bg-white border border-coffee-200 rounded-lg font-bold text-coffee-900 text-xs focus:outline-none focus:border-coffee-600">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-coffee-500 font-bold mb-1">TIỀN THỪA THỐI</label>
+                                    <div id="changeOutput" class="w-full px-2.5 py-1.5 bg-coffee-200/60 rounded-lg font-bold text-emerald-800 text-xs flex items-center">
+                                        0đ
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="openVietQRPaymentModal()" id="btnPayVietQR" class="bg-sky-700 hover:bg-sky-800 text-white font-bold py-3 px-3 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-sm transition">
+                                <span><i class="fa-solid fa-qrcode"></i> Chuyển Khoản VietQR</span>
+                            </button>
+                            <button onclick="processPayment('cash')" id="btnPayCash" class="bg-gradient-to-r from-coffee-800 to-coffee-900 hover:from-coffee-900 hover:to-black text-amber-300 font-bold py-3 px-3 rounded-xl text-xs flex flex-col items-center justify-center gap-1 shadow-md shadow-coffee-900/30 transition border border-amber-400/20">
+                                <span><i class="fa-solid fa-money-bill-wave"></i> Tiền Mặt & In Hóa Đơn</span>
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MODULE 2: CHẤM CÔNG -->
+        <section id="module-attendance" class="module-section hidden animate-fadeIn">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <div class="lg:col-span-4 space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200/80 space-y-4">
+                        <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+                            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-fingerprint"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-900">Điểm Danh Ca Làm</h3>
+                                <p class="text-xs text-slate-400">Dữ liệu lưu vĩnh viễn vào CSDL quán</p>
+                            </div>
+                        </div>
+
+                        <form id="attendanceForm" onsubmit="handleAttendance(event)" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Nhân viên:</label>
+                                <select id="attEmployeeSelect" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 font-semibold text-slate-700">
+                                    <option value="NV001">NV001 — Nguyễn Thị Lan (Pha chế)</option>
+                                    <option value="NV002">NV002 — Trần Văn Hùng (Thu ngân)</option>
+                                    <option value="NV003">NV003 — Lê Thị Mai (Phục vụ)</option>
+                                    <option value="NV004">NV004 — Phạm Quốc Bảo (Bảo vệ)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Ca làm việc hôm nay:</label>
+                                <select id="attShiftSelect" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:border-emerald-500 bg-slate-50 font-semibold text-slate-700">
+                                    <option value="Ca Sáng (07:00 - 15:00)">Ca Sáng (07:00 - 15:00)</option>
+                                    <option value="Ca Chiều (15:00 - 23:00)">Ca Chiều (15:00 - 23:00)</option>
+                                    <option value="Ca Đêm (23:00 - 07:00)">Ca Đêm (23:00 - 07:00)</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">Ghi chú (nếu có):</label>
+                                <input type="text" id="attNoteInput" placeholder="Ví dụ: Xin đổi ca với Hùng..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-emerald-500">
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-3 pt-2">
+                                <button type="submit" name="action" value="checkin" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 px-3 rounded-xl text-xs shadow-md shadow-emerald-600/20 flex items-center justify-center gap-2 transition">
+                                    <i class="fa-solid fa-right-to-bracket"></i> CHECK-IN
+                                </button>
+                                <button type="submit" name="action" value="checkout" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-3 rounded-xl text-xs shadow-md shadow-rose-600/20 flex items-center justify-center gap-2 transition">
+                                    <i class="fa-solid fa-right-from-bracket"></i> CHECK-OUT
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="bg-gradient-to-br from-slate-900 to-slate-800 text-white p-4 rounded-2xl space-y-3 shadow-md">
+                        <h4 class="font-bold text-xs text-amber-400 uppercase tracking-wider">Thống kê chấm công (CSDL)</h4>
+                        <div class="grid grid-cols-3 gap-2 text-center">
+                            <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                                <span class="block text-lg font-extrabold text-emerald-400" id="countOnTime">0</span>
+                                <span class="text-[10px] text-slate-400">Đúng giờ</span>
+                            </div>
+                            <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                                <span class="block text-lg font-extrabold text-amber-400" id="countLate">0</span>
+                                <span class="text-[10px] text-slate-400">Đi muộn</span>
+                            </div>
+                            <div class="bg-slate-800/80 p-2.5 rounded-xl border border-slate-700">
+                                <span class="block text-lg font-extrabold text-sky-400" id="countTotalAtt">0</span>
+                                <span class="text-[10px] text-slate-400">Tổng lượt</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-8">
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-4 space-y-4">
+                        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-slate-100">
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">Nhật Ký Chấm Công Chi Tiết</h3>
+                                <p class="text-xs text-slate-400">Lưu trữ tự động và đồng bộ thời gian thực</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <select id="attFilterEmp" onchange="renderAttendanceLogs()" class="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50">
+                                    <option value="ALL">Tất cả nhân viên</option>
+                                    <option value="NV001">NV001 — Nguyễn Thị Lan</option>
+                                    <option value="NV002">NV002 — Trần Văn Hùng</option>
+                                    <option value="NV003">NV003 — Lê Thị Mai</option>
+                                    <option value="NV004">NV004 — Phạm Quốc Bảo</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs border-collapse">
+                                <thead>
+                                    <tr class="bg-slate-50 text-slate-500 font-bold border-b border-slate-200">
+                                        <th class="p-3">Mã NV & Tên</th>
+                                        <th class="p-3">Ca Đăng Ký</th>
+                                        <th class="p-3">Check-In</th>
+                                        <th class="p-3">Check-Out</th>
+                                        <th class="p-3">Trạng Thái</th>
+                                        <th class="p-3">Ghi Chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="attendanceLogTable" class="divide-y divide-slate-100 font-medium"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MODULE 3: ĐĂNG KÝ & PHÊ DUYỆT LỊCH LÀM VIỆC -->
+        <section id="module-schedule" class="module-section hidden animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 space-y-5">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 pb-4 border-b border-slate-100">
+                    <div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <h2 class="text-lg font-bold text-slate-900">Lịch Làm Việc Tuần Này</h2>
+                            <span class="bg-sky-100 text-sky-700 text-[11px] font-bold px-2.5 py-0.5 rounded-full">Tuần Hiện Tại</span>
+                            <span id="schedulePendingSummary" class="bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-amber-300">0 ca chờ duyệt</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-0.5">Nhân viên đăng ký ca (trạng thái Chờ duyệt) — Quản lý bấm trực tiếp vào ca để Duyệt / Từ chối hoặc Duyệt tất cả</p>
+                    </div>
+
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="openRegisterShiftModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-md shadow-indigo-500/20 flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-calendar-plus"></i> Đăng Ký Ca Làm
+                        </button>
+                        <button id="btnApproveAllShifts" onclick="approveAllShifts()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-3.5 py-2 rounded-xl text-xs font-bold shadow-md shadow-emerald-600/20 flex items-center gap-1.5 transition">
+                            <i class="fa-solid fa-circle-check"></i> Duyệt Nhanh Tất Cả
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200/70">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <span class="font-bold text-slate-500">Chú thích ca:</span>
+                        <span class="inline-flex items-center gap-1.5 font-semibold text-sky-700"><span class="w-3 h-3 rounded-full bg-sky-400"></span> Ca Sáng</span>
+                        <span class="inline-flex items-center gap-1.5 font-semibold text-emerald-700"><span class="w-3 h-3 rounded-full bg-emerald-400"></span> Ca Chiều</span>
+                        <span class="inline-flex items-center gap-1.5 font-semibold text-purple-700"><span class="w-3 h-3 rounded-full bg-purple-400"></span> Ca Đêm</span>
+                        <span class="inline-flex items-center gap-1.5 font-semibold text-amber-700"><span class="w-3 h-3 rounded-full bg-amber-400 animate-pulse"></span> Chờ Duyệt</span>
+                        <span class="inline-flex items-center gap-1.5 font-semibold text-rose-700"><span class="w-3 h-3 rounded-full bg-rose-400"></span> Từ Chối</span>
+                    </div>
+                    <span class="text-[11px] text-slate-500 italic"><i class="fa-solid fa-hand-pointer mr-1"></i>Quản lý nhấn vào từng ô ca để phê duyệt/từ chối</span>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-900 text-white font-bold text-center">
+                                <th class="p-3 w-44 text-left sticky left-0 bg-slate-900 border-r border-slate-800">Nhân Viên</th>
+                                <th class="p-3 w-32 border-r border-slate-800">Thứ 2</th>
+                                <th class="p-3 w-32 border-r border-slate-800">Thứ 3</th>
+                                <th class="p-3 w-32 border-r border-slate-800">Thứ 4</th>
+                                <th class="p-3 w-32 border-r border-slate-800">Thứ 5</th>
+                                <th class="p-3 w-32 border-r border-slate-800">Thứ 6</th>
+                                <th class="p-3 w-32 border-r border-slate-800">Thứ 7</th>
+                                <th class="p-3 w-32">Chủ Nhật</th>
+                            </tr>
+                        </thead>
+                        <tbody id="scheduleMatrixBody" class="divide-y divide-slate-200 font-semibold bg-white"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- MODULE 4: TÍNH LƯƠNG -->
+        <section id="module-payroll" class="module-section hidden animate-fadeIn">
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-5 space-y-5">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900">Bảng Tính LƯƠNG NHÂN SỰ — Tháng 11/2026</h2>
+                        <p class="text-xs text-slate-400">Tự động tổng hợp số giờ làm, tính phụ cấp và thưởng phạt (Phân quyền Quản lý)</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div id="payrollStatusBadge" class="bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-xl border border-amber-200 flex items-center gap-1.5">
+                            <i class="fa-solid fa-lock-open text-amber-600"></i> Kỳ lương đang MỞ
+                        </div>
+                        <button id="payrollLockButton" onclick="togglePayrollLock()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3.5 py-1.5 rounded-xl text-xs transition">
+                            <i class="fa-solid fa-lock"></i> Khóa Kỳ Lương
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-400 font-bold block">TỔNG QUỸ LƯƠNG</span>
+                        <span class="text-lg font-extrabold text-indigo-600" id="payrollTotalFund">0đ</span>
+                    </div>
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-400 font-bold block">TỔNG SỐ GIỜ LÀM</span>
+                        <span class="text-lg font-extrabold text-slate-800" id="payrollTotalHours">710 Giờ</span>
+                    </div>
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-400 font-bold block">TỔNG THƯỞNG & PHỤ CẤP</span>
+                        <span class="text-lg font-extrabold text-emerald-600" id="payrollTotalBonus">+0đ</span>
+                    </div>
+                    <div class="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <span class="text-[11px] text-slate-400 font-bold block">KHẤU TRỪ / PHẠT</span>
+                        <span class="text-lg font-extrabold text-rose-600" id="payrollTotalPenalty">-0đ</span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-slate-200">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-slate-900 text-white font-bold">
+                                <th class="p-3">Nhân Viên</th>
+                                <th class="p-3">Vị Trí</th>
+                                <th class="p-3 text-center">Lương Theo Giờ</th>
+                                <th class="p-3 text-center">Tổng Giờ Làm</th>
+                                <th class="p-3 text-right">Lương Cơ Bản</th>
+                                <th class="p-3 text-right">Phụ Cấp / Thưởng</th>
+                                <th class="p-3 text-right">Khấu Trừ</th>
+                                <th class="p-3 text-right text-amber-300">THỰC LĨNH</th>
+                                <th class="p-3 text-center">Hành Động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payrollTableBody" class="divide-y divide-slate-100 font-medium"></tbody>
+                    </table>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- MODULE 5: ĐỊA CHỈ & HỆ THỐNG TIẾP NHẬN LIÊN HỆ -->
+        <section id="module-store" class="module-section hidden animate-fadeIn space-y-5">
+            <div class="relative h-52 md:h-64 overflow-hidden rounded-2xl shadow-sm">
+                <img src="https://abroader.org/wp-content/uploads/2023/03/image-7-1024x683.png" alt="Không gian quán cà phê phong cách mộc với bàn ghế gỗ và ánh đèn ấm" class="w-full h-full object-cover" loading="lazy" referrerpolicy="no-referrer">
+                <div class="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent flex items-end p-6">
+                    <div class="text-white"><p class="text-amber-200 text-xs font-bold tracking-widest">NGÂM CÀ PHÊ</p><h2 class="text-2xl font-extrabold mt-1">Một góc bình yên giữa lòng Sài Gòn</h2><p class="text-xs text-white/80 mt-1">Hình ảnh không gian mang tính minh họa</p></div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-coffee-200/80 space-y-4">
+                        <div class="flex items-center gap-3 pb-3 border-b border-coffee-100">
+                            <div class="w-10 h-10 rounded-xl bg-coffee-100 text-coffee-700 flex items-center justify-center font-bold text-lg">
+                                <i class="fa-solid fa-store"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-coffee-900 text-base">Quán NGÂM CÀ PHÊ</h3>
+                                <p class="text-xs text-coffee-500">Không gian cà phê ngâm mộc mạc tại Quận 3, TP.HCM</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                            <div class="space-y-2.5">
+                                <p class="font-bold text-coffee-800 flex items-center gap-2">
+                                    <i class="fa-solid fa-location-dot text-amber-600 text-sm"></i> Địa chỉ chính thức:
+                                </p>
+                                <p class="text-coffee-700 pl-6 leading-relaxed">
+                                    <strong>193/19 Nam Kỳ Khởi Nghĩa</strong>,<br>
+                                    Phường Võ Thị Sáu, Quận 3, TP. Hồ Chí Minh
+                                </p>
+
+                                <p class="font-bold text-coffee-800 flex items-center gap-2 pt-1">
+                                    <i class="fa-solid fa-phone text-emerald-600 text-sm"></i> Hotline Đặt Bàn / Liên Hệ:
+                                </p>
+                                <p class="text-coffee-700 pl-6 font-semibold">0938 193 193</p>
+                            </div>
+
+                            <div class="space-y-2.5">
+                                <p class="font-bold text-coffee-800 flex items-center gap-2">
+                                    <i class="fa-solid fa-envelope text-sky-600 text-sm"></i> Email Liên Hệ:
+                                </p>
+                                <p class="text-coffee-700 pl-6">lienhe@ngamcaphe.vn</p>
+
+                                <p class="font-bold text-coffee-800 flex items-center gap-2 pt-1">
+                                    <i class="fa-solid fa-clock text-amber-600 text-sm"></i> Giờ Phục Vụ:
+                                </p>
+                                <p class="text-coffee-700 pl-6">Thứ 2 — Chủ Nhật: <strong>07:00 – 22:30</strong></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-coffee-200/80 space-y-3">
+                        <div class="flex justify-between items-center">
+                            <h4 class="font-bold text-xs text-coffee-800 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fa-solid fa-map-marked-alt text-coffee-600"></i> Bản Đồ Trực Tiếp (193/19 Nam Kỳ Khởi Nghĩa, Q.3)
+                            </h4>
+                            <span class="text-[10px] bg-amber-100 text-amber-800 font-bold px-2 py-0.5 rounded">Google Maps Live</span>
+                        </div>
+
+                        <div class="w-full h-72 rounded-xl overflow-hidden shadow-inner border border-coffee-200">
+                            <iframe
+                                title="Bản đồ Ngâm Cà Phê 193/19 Nam Kỳ Khởi Nghĩa"
+                                src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3919.424368735874!2d106.6874833!3d10.7787722!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x31752f3900000001%3A0x123456789abcdef!2s193%2F19%20Nam%20K%E1%BB%B0%20Kh%E1%BB%9Fi%20Ngh%C4%A9a%2C%20Ph%C6%B0%E1%BB%9Dng%208%2C%20Qu%E1%BA%ADn%203%2C%20H%E1%BB%93%20Ch%C3%AD%20Minh!5e0!3m2!1svi!2svn!4v1700000000000!5m2!1svi!2svn"
+                                width="100%"
+                                height="100%"
+                                style="border:0;"
+                                allowfullscreen=""
+                                loading="lazy"
+                                referrerpolicy="no-referrer-when-downgrade">
+                            </iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lg:col-span-5">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-coffee-200/80 space-y-4">
+                        <div class="pb-3 border-b border-coffee-100">
+                            <h3 class="font-bold text-coffee-900 text-base">Gửi Lời Nhắn Đến Ngâm Cà Phê</h3>
+                            <p class="text-xs text-coffee-500">Thông tin được lưu trực tiếp vào Hệ thống tiếp nhận & CSKH bên dưới</p>
+                        </div>
+
+                        <form id="contactForm" onsubmit="handleContactSubmit(event)" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-coffee-700 mb-1">Họ và tên:</label>
+                                <input type="text" id="contactName" required placeholder="Nhập tên của bạn..." class="w-full px-3 py-2 rounded-xl border border-coffee-200 text-xs focus:outline-none focus:border-coffee-600 bg-coffee-50">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-coffee-700 mb-1">Số điện thoại liên hệ:</label>
+                                <input type="tel" id="contactPhone" required placeholder="090..." class="w-full px-3 py-2 rounded-xl border border-coffee-200 text-xs focus:outline-none focus:border-coffee-600 bg-coffee-50">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-coffee-700 mb-1">Mục đích gửi:</label>
+                                <select id="contactTopic" class="w-full px-3 py-2 rounded-xl border border-coffee-200 text-xs focus:outline-none focus:border-coffee-600 bg-coffee-50 font-medium">
+                                    <option value="Đặt bàn trước cho nhóm">Đặt bàn trước cho nhóm</option>
+                                    <option value="Góp ý chất lượng món ngâm & dịch vụ">Góp ý chất lượng món ngâm & dịch vụ</option>
+                                    <option value="Ứng tuyển nhân sự (Pha chế / Phục vụ)">Ứng tuyển nhân sự (Pha chế / Phục vụ)</option>
+                                    <option value="Hợp tác / Đặt mua hạt cà phê">Hợp tác / Đặt mua hạt cà phê</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-coffee-700 mb-1">Nội dung chi tiết:</label>
+                                <textarea id="contactMessage" rows="4" required placeholder="Lời nhắn chi tiết..." class="w-full px-3 py-2 rounded-xl border border-coffee-200 text-xs focus:outline-none focus:border-coffee-600 bg-coffee-50"></textarea>
+                            </div>
+
+                            <button type="submit" class="w-full bg-coffee-800 hover:bg-coffee-900 text-amber-200 font-bold py-2.5 rounded-xl text-xs shadow-md transition">
+                                <i class="fa-solid fa-paper-plane mr-1"></i> Gửi Tin Nhắn Vào Hệ Thống Tiếp Nhận
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- HỆ THỐNG TIẾP NHẬN & XỬ LÝ THÔNG TIN LIÊN HỆ THỰC TẾ -->
+            <div class="bg-white p-5 rounded-2xl shadow-sm border border-coffee-200/80 space-y-4">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 pb-3 border-b border-coffee-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-lg">
+                            <i class="fa-solid fa-inbox"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-coffee-900 text-base">Hệ Thống Tiếp Nhận & Xử Lý Thông Tin Liên Hệ</h3>
+                            <p class="text-xs text-coffee-500">Quản lý đặt bàn, phản hồi khách hàng và hồ sơ ứng tuyển lưu trong CSDL</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <select id="contactFilterStatus" onchange="renderContactMessages()" class="px-3 py-1.5 rounded-xl border border-coffee-200 text-xs font-bold text-coffee-800 bg-coffee-50">
+                            <option value="ALL">Tất cả trạng thái</option>
+                            <option value="Mới tiếp nhận">Mới tiếp nhận</option>
+                            <option value="Đang xử lý">Đang xử lý</option>
+                            <option value="Đã phản hồi">Đã phản hồi</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-xl border border-coffee-200/80">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="bg-coffee-900 text-coffee-100 font-bold">
+                                <th class="p-3">Mã Phiếu</th>
+                                <th class="p-3">Khách Hàng / SĐT</th>
+                                <th class="p-3">Chủ Đề</th>
+                                <th class="p-3">Nội Dung Chi Tiết</th>
+                                <th class="p-3">Thời Gian Gửi</th>
+                                <th class="p-3">Trạng Thái</th>
+                                <th class="p-3 text-center">Xử Lý</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contactMessagesTableBody" class="divide-y divide-coffee-100 font-medium"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- MODULE: DASHBOARD -->
+        <section id="module-dashboard" class="module-section space-y-5 animate-fadeIn">
+            <div class="relative overflow-hidden rounded-2xl min-h-44 md:min-h-56 shadow-sm">
+                <img src="https://img.vietcetera.com/uploads/images/25-apr-2024/insta-dia-phuong-768x512.jpg" alt="Không gian quán cà phê mộc mạc với bàn gỗ và cây xanh" class="absolute inset-0 w-full h-full object-cover" loading="lazy" referrerpolicy="no-referrer">
+                <div class="absolute inset-0 bg-gradient-to-r from-black/75 via-black/35 to-transparent"></div>
+                <div class="relative z-10 p-6 md:p-8 flex flex-col justify-center min-h-44 md:min-h-56 text-white">
+                    <p class="text-amber-200 text-xs font-bold tracking-[0.25em] uppercase">NGÂM CÀ PHÊ</p>
+                    <h2 class="text-2xl md:text-3xl font-extrabold mt-2">Không gian mộc – Vị cà phê riêng</h2>
+                    <p class="text-sm text-white/85 mt-2 max-w-xl">Hệ thống quản lý bán hàng và vận hành quán cà phê</p>
+                </div>
+            </div>
+            <div><h2 class="text-xl font-extrabold">Tổng quan vận hành</h2><p class="text-xs text-coffee-500">Doanh thu, đơn hàng, chi phí và cảnh báo cần xử lý.</p></div>
+            <div class="grid grid-cols-2 xl:grid-cols-4 gap-3">
+                <div class="bg-white border border-coffee-200 rounded-2xl p-4"><p class="text-xs text-coffee-500">Doanh thu</p><b id="dashRevenue" class="text-xl">0đ</b></div>
+                <div class="bg-white border border-coffee-200 rounded-2xl p-4"><p class="text-xs text-coffee-500">Đơn hàng</p><b id="dashOrders" class="text-xl">0</b></div>
+                <div class="bg-white border border-coffee-200 rounded-2xl p-4"><p class="text-xs text-coffee-500">Chi phí</p><b id="dashExpenses" class="text-xl text-rose-700">0đ</b></div>
+                <div class="bg-white border border-coffee-200 rounded-2xl p-4"><p class="text-xs text-coffee-500">Nguyên liệu sắp hết</p><b id="dashLowStock" class="text-xl text-amber-700">0</b></div>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-4"><div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-3">Món bán chạy</h3><div id="dashTopProducts" class="space-y-2 text-sm"></div></div><div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-3">Cảnh báo kho</h3><div id="dashStockAlerts" class="space-y-2 text-sm"></div></div></div>
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-[11px] text-amber-900">Dữ liệu hiện vẫn được lưu trên trình duyệt. Muốn vận hành nhiều máy tại quán cần triển khai máy chủ, API, cơ sở dữ liệu tập trung và xác thực thanh toán thật.</div>
+        </section>
+
+        <!-- MODULE: INVENTORY -->
+        <section id="module-inventory" class="module-section hidden space-y-5 animate-fadeIn">
+            <div class="flex flex-wrap justify-between items-center gap-2"><div><h2 class="text-xl font-extrabold">Quản lý kho nguyên vật liệu</h2><p class="text-xs text-coffee-500">Theo dõi tồn kho, định lượng món và lịch sử xuất nhập.</p></div><button onclick="openStockInForm()" class="bg-coffee-800 text-amber-100 px-4 py-2 rounded-xl text-xs font-bold"><i class="fa-solid fa-plus mr-1"></i> Nhập nhanh</button></div>
+            <div class="bg-white border border-coffee-200 rounded-2xl overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-xs text-left"><thead class="bg-coffee-100"><tr><th class="p-3">Nguyên liệu</th><th class="p-3">Tồn kho</th><th class="p-3">Đơn vị</th><th class="p-3">Tồn tối thiểu</th><th class="p-3">Trạng thái</th><th class="p-3">Thao tác</th></tr></thead><tbody id="inventoryTable" class="divide-y"></tbody></table></div></div>
+            <div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-2">Định lượng nguyên liệu theo món</h3><p class="text-xs text-amber-800 mb-3">Định lượng mẫu cần được quản lý xác nhận theo công thức thực tế trước khi sử dụng để tính giá vốn.</p><div id="recipeList" class="grid md:grid-cols-2 gap-2 text-xs"></div></div>
+            <div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-2">Lịch sử nhập / xuất</h3><div id="stockHistory" class="space-y-2 text-xs"></div></div>
+        </section>
+
+        <!-- MODULE: TABLES -->
+        <section id="module-tables" class="module-section hidden space-y-5 animate-fadeIn"><div><h2 class="text-xl font-extrabold">Quản lý bàn</h2><p class="text-xs text-coffee-500">Sơ đồ bàn và đơn hàng phục vụ tại chỗ.</p></div><div id="tableBoard" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3"></div><div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-2">Đơn hàng tại bàn</h3><div id="activeTableOrders" class="space-y-2 text-xs"></div></div></section>
+
+        <!-- MODULE: PROCUREMENT -->
+        <section id="module-procurement" class="module-section hidden space-y-5 animate-fadeIn">
+            <div><h2 class="text-xl font-extrabold">Nhà cung cấp & nhập hàng</h2><p class="text-xs text-coffee-500">Lưu nhà cung cấp và lập phiếu nhập để cập nhật tồn kho.</p></div>
+            <div class="grid lg:grid-cols-2 gap-4">
+                <form onsubmit="addSupplier(event)" class="bg-white border border-coffee-200 rounded-2xl p-4 space-y-3"><h3 class="font-bold">Thêm nhà cung cấp</h3><input id="supplierName" required class="w-full border rounded-lg p-2 text-sm" placeholder="Tên nhà cung cấp"><input id="supplierPhone" class="w-full border rounded-lg p-2 text-sm" placeholder="Số điện thoại"><input id="supplierItems" class="w-full border rounded-lg p-2 text-sm" placeholder="Mặt hàng cung cấp"><button class="bg-coffee-800 text-amber-100 px-4 py-2 rounded-xl text-xs font-bold">Lưu nhà cung cấp</button></form>
+                <form onsubmit="receivePurchase(event)" class="bg-white border border-coffee-200 rounded-2xl p-4 space-y-3"><h3 class="font-bold">Tạo phiếu nhập hàng</h3><label class="block text-xs font-semibold">Nhà cung cấp</label><select id="purchaseSupplier" required class="w-full border rounded-lg p-2 text-sm"></select><label class="block text-xs font-semibold">Nguyên liệu</label><select id="purchaseItem" required class="w-full border rounded-lg p-2 text-sm"></select><div class="grid grid-cols-2 gap-2"><input id="purchaseQty" type="number" min="0.01" step="0.01" required class="border rounded-lg p-2 text-sm" placeholder="Số lượng nhập"><input id="purchaseUnitCost" type="number" min="0" step="1" required class="border rounded-lg p-2 text-sm" placeholder="Đơn giá (đ)"></div><input id="purchaseDate" type="date" required class="w-full border rounded-lg p-2 text-sm"><button class="bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold">Xác nhận nhập kho</button><p class="text-[11px] text-coffee-500">Khi xác nhận, tồn kho tăng và chi phí mua hàng được ghi nhận tự động.</p></form>
+            </div>
+            <div class="grid lg:grid-cols-2 gap-4"><div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-2">Danh sách nhà cung cấp</h3><div id="supplierList" class="space-y-2 text-xs"></div></div><div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-2">Lịch sử phiếu nhập</h3><div id="purchaseList" class="space-y-2 text-xs"></div></div></div>
+        </section>
+
+        <!-- MODULE: EXPENSES -->
+        <section id="module-expenses" class="module-section hidden space-y-5 animate-fadeIn"><div><h2 class="text-xl font-extrabold">Quản lý chi phí</h2><p class="text-xs text-coffee-500">Theo dõi các khoản chi vận hành và chứng từ tham chiếu.</p></div>
+            <form onsubmit="addExpense(event)" class="bg-white border border-coffee-200 rounded-2xl p-4 grid md:grid-cols-5 gap-2"><input id="expenseTitle" required class="border rounded-lg p-2 text-sm" placeholder="Nội dung chi"><select id="expenseCategory" class="border rounded-lg p-2 text-sm"><option>Nguyên liệu</option><option>Điện nước</option><option>Mặt bằng</option><option>Lương nhân viên</option><option>Bảo trì</option><option>Marketing</option><option>Khác</option></select><input id="expenseAmount" type="number" min="1" required class="border rounded-lg p-2 text-sm" placeholder="Số tiền (đ)"><input id="expenseSupplier" class="border rounded-lg p-2 text-sm" placeholder="Người nhận / NCC"><input id="expenseReference" class="border rounded-lg p-2 text-sm" placeholder="Mã chứng từ / liên kết (nếu có)"><input id="expenseDate" type="date" required class="border rounded-lg p-2 text-sm"><button class="md:col-span-5 bg-coffee-800 text-amber-100 px-4 py-2 rounded-xl text-xs font-bold">Lưu khoản chi</button></form>
+            <div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-2">Danh sách chi phí</h3><div id="expenseList" class="overflow-x-auto"></div></div>
+        </section>
+
+        <!-- MODULE: STAFF -->
+        <section id="module-staffplus" class="module-section hidden space-y-5 animate-fadeIn"><div><h2 class="text-xl font-extrabold">Quản lý nhân sự</h2><p class="text-xs text-coffee-500">Hồ sơ nhân viên, nghỉ phép, đổi ca và tăng ca.</p></div>
+            <form onsubmit="addStaffProfile(event)" class="bg-white border border-coffee-200 rounded-2xl p-4 grid md:grid-cols-5 gap-2"><input id="staffId" required placeholder="Mã NV" class="border rounded-lg p-2 text-sm"><input id="staffName" required placeholder="Họ tên" class="border rounded-lg p-2 text-sm"><input id="staffPhone" placeholder="Số điện thoại" class="border rounded-lg p-2 text-sm"><select id="staffPosition" class="border rounded-lg p-2 text-sm"><option>Pha chế</option><option>Thu ngân</option><option>Phục vụ</option><option>Quản lý</option></select><button class="bg-coffee-800 text-amber-100 px-3 py-2 rounded-xl text-xs font-bold">Thêm hồ sơ</button></form>
+            <form onsubmit="addStaffRequest(event)" class="bg-white border border-coffee-200 rounded-2xl p-4 grid md:grid-cols-5 gap-2"><select id="requestType" class="border rounded-lg p-2 text-sm"><option>Nghỉ phép</option><option>Đổi ca</option><option>Tăng ca</option></select><input id="requestEmployee" required placeholder="Mã nhân viên" class="border rounded-lg p-2 text-sm"><input id="requestDate" type="date" required class="border rounded-lg p-2 text-sm"><input id="requestNote" required placeholder="Lý do / ca muốn đổi" class="border rounded-lg p-2 text-sm"><button class="bg-coffee-800 text-amber-100 px-3 py-2 rounded-xl text-xs font-bold">Gửi yêu cầu</button></form>
+            <div class="grid lg:grid-cols-2 gap-4"><div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-2">Hồ sơ nhân viên</h3><div id="staffProfileList" class="space-y-2 text-xs"></div></div><div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-2">Yêu cầu nhân sự</h3><div id="staffRequestList" class="space-y-2 text-xs"></div></div></div>
+        </section>
+
+        <!-- MODULE: REPORTS -->
+        <section id="module-reports" class="module-section hidden space-y-5 animate-fadeIn"><div class="flex justify-between items-center gap-2"><div><h2 class="text-xl font-extrabold">Báo cáo thống kê</h2><p class="text-xs text-coffee-500">Tổng hợp doanh thu, chi phí, lợi nhuận ước tính và mặt hàng bán chạy.</p></div><button onclick="exportReportCSV()" class="bg-coffee-800 text-amber-100 px-4 py-2 rounded-xl text-xs font-bold"><i class="fa-solid fa-file-csv mr-1"></i> Xuất CSV</button></div>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-3"><div class="bg-white border rounded-xl p-4"><p class="text-xs text-slate-500">Doanh thu</p><b id="reportRevenue" class="text-lg">0đ</b></div><div class="bg-white border rounded-xl p-4"><p class="text-xs text-slate-500">Chi phí đã ghi nhận</p><b id="reportCosts" class="text-lg text-rose-700">0đ</b></div><div class="bg-white border rounded-xl p-4"><p class="text-xs text-slate-500">Chênh lệch thu - chi</p><b id="reportProfit" class="text-lg text-emerald-700">0đ</b></div><div class="bg-white border rounded-xl p-4"><p class="text-xs text-slate-500">Số đơn</p><b id="reportOrderCount" class="text-lg">0</b></div></div>
+            <div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-3">Doanh thu theo ngày (7 ngày gần nhất)</h3><div id="reportDaily" class="space-y-3"></div></div>
+            <div class="bg-white border border-coffee-200 rounded-2xl p-4"><h3 class="font-bold mb-2">Chi tiết chi phí theo nhóm</h3><div id="reportCategoryCosts" class="space-y-2 text-sm"></div></div>
+            <p class="text-[11px] text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3">Lợi nhuận ở đây là chênh lệch doanh thu trừ các khoản chi đã nhập, chưa phải lợi nhuận kế toán vì có thể thiếu giá vốn, công nợ, thuế và các chi phí chưa ghi nhận.</p>
+        </section>
+
+        <!-- MODULE: SETTINGS -->
+        <section id="module-settings" class="module-section hidden space-y-5 animate-fadeIn"><div><h2 class="text-xl font-extrabold">Cài đặt hệ thống</h2><p class="text-xs text-coffee-500">Tài khoản, phân quyền, cấu hình thanh toán và sao lưu dữ liệu.</p></div>
+            <div class="grid md:grid-cols-2 gap-4"><div class="bg-white border border-coffee-200 rounded-2xl p-4 space-y-3"><h3 class="font-bold">Tài khoản & phân quyền</h3><p class="text-xs text-coffee-600">Quản lý tài khoản đang đăng nhập và quyền thao tác theo vai trò.</p><button onclick="openAuthModal()" class="bg-coffee-800 text-amber-100 px-4 py-2 rounded-xl text-xs font-bold">Quản lý đăng nhập</button><div class="text-[11px] text-rose-700 bg-rose-50 p-3 rounded-lg">Lưu ý bảo mật: tài khoản mẫu trong mã nguồn và kiểm tra quyền phía trình duyệt không đủ an toàn cho môi trường kinh doanh thật. Cần xác thực và phân quyền phía máy chủ.</div></div>
+            <div class="bg-white border border-coffee-200 rounded-2xl p-4 space-y-3"><h3 class="font-bold">Sao lưu & cấu hình</h3><button onclick="openSystemSyncModal()" class="block bg-emerald-700 text-white px-4 py-2 rounded-xl text-xs font-bold">Cấu hình CSDL / VietQR</button><button onclick="exportDatabaseFile()" class="block bg-coffee-800 text-amber-100 px-4 py-2 rounded-xl text-xs font-bold">Tải bản sao lưu JSON</button><label class="inline-flex bg-slate-100 border rounded-xl px-4 py-2 text-xs font-bold cursor-pointer">Khôi phục từ JSON<input type="file" accept=".json,application/json" onchange="importDatabaseFile(event)" class="hidden"></label></div></div>
+        </section>
+
+    </main>
+
+    <!-- MODAL 1: TÙY CHỌN MÓN -->
+    <div id="productOptionsModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl animate-fadeIn">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="font-bold text-slate-900 text-sm" id="modalProductName">Tên Món</h3>
+                <button onclick="closeProductOptionsModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-2">Chọn Size:</label>
+                <div class="grid grid-cols-3 gap-2" id="modalSizeContainer">
+                    <button type="button" onclick="selectModalSize('S', 0, event)" class="size-opt-btn border-2 border-brand-indigo bg-indigo-50 text-brand-indigo font-bold py-2 rounded-xl text-xs">Size S (+0đ)</button>
+                    <button type="button" onclick="selectModalSize('M', 5000, event)" class="size-opt-btn border-2 border-slate-200 font-semibold text-slate-600 py-2 rounded-xl text-xs">Size M (+5k)</button>
+                    <button type="button" onclick="selectModalSize('L', 10000, event)" class="size-opt-btn border-2 border-slate-200 font-semibold text-slate-600 py-2 rounded-xl text-xs">Size L (+10k)</button>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1">Ghi chú khẩu vị (Đá/Đường):</label>
+                <input type="text" id="modalItemNote" placeholder="Ví dụ: Ít đường, nhiều đá, ngọt vừa..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:outline-none focus:border-brand-indigo">
+            </div>
+
+            <button onclick="confirmAddToCartWithOptions()" class="w-full bg-coffee-800 hover:bg-coffee-900 text-amber-200 font-bold py-2.5 rounded-xl text-xs shadow-md">
+                Thêm Vào Đơn Hàng
+            </button>
+        </div>
+    </div>
+
+    <!-- MODAL 2: THANH TOÁN VIETQR KẾT NỐI NGÂN HÀNG -->
+    <div id="vietqrModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl animate-fadeIn border border-sky-200">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-qrcode"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">Thanh Toán Chuyển Khoản VietQR</h3>
+                        <p class="text-[11px] text-slate-500">Mã QR chuyển khoản — xác nhận cần tích hợp API ngân hàng</p>
+                    </div>
+                </div>
+                <button onclick="closeVietQRModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="bg-sky-50/80 border border-sky-200 rounded-2xl p-4 flex flex-col items-center text-center space-y-2">
+                <span class="text-[11px] font-bold text-sky-800 bg-white px-3 py-1 rounded-full border border-sky-200 shadow-sm">
+                    Quét mã bằng ứng dụng Ngân hàng / Ví điện tử
+                </span>
+                <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+                    <img id="vietqrImage" src="" alt="Mã VietQR Thanh Toán" class="w-52 h-52 object-contain">
+                </div>
+                <div class="text-xs space-y-0.5 pt-1">
+                    <p class="text-slate-500">Ngân hàng: <strong id="qrBankName" class="text-slate-800">MB Bank (Quân Đội)</strong></p>
+                    <p class="text-slate-500">Số tài khoản: <strong id="qrAccountNo" class="font-mono text-slate-900">0938193193</strong> • <strong id="qrAccountHolder" class="text-slate-800">NGAM CA PHE</strong></p>
+                    <p class="text-slate-500">Số tiền: <strong id="qrAmountDisplay" class="text-base text-rose-600 font-extrabold">0đ</strong></p>
+                    <p class="text-slate-500">Nội dung CK: <strong id="qrTransferMemo" class="font-mono bg-amber-100 text-amber-900 px-2 py-0.5 rounded">NGAM000</strong></p>
+                </div>
+            </div>
+
+            <div id="bankVerifyStatusBox" class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs flex items-center justify-between">
+                <div class="flex items-center gap-2 text-amber-800 font-semibold">
+                    <i class="fa-solid fa-spinner fa-spin text-amber-600"></i>
+                    <span id="bankVerifyText">Đang chờ tín hiệu biến động số dư...</span>
+                </div>
+                <span id="qrCountdown" class="font-mono font-bold text-amber-900">05:00</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="closeVietQRModal()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition">
+                    Hủy Giao Dịch
+                </button>
+                <button id="btnVerifyVietQR" onclick="verifyAndCompleteVietQR()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 transition">
+                    <i class="fa-solid fa-check-double"></i> Xác nhận (bản demo) & Xuất Hóa Đơn
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 3: HÓA ĐƠN THANH TOÁN -->
+    <div id="receiptModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl animate-fadeIn border-2 border-coffee-300">
+            <div id="printableReceipt" class="space-y-3 font-mono text-xs text-coffee-900">
+                <div class="text-center space-y-1">
+                    <h2 class="font-extrabold text-base tracking-tight text-coffee-900">NGÂM CÀ PHÊ</h2>
+                    <p class="text-[10px] text-coffee-600">193/19 Nam Kỳ Khởi Nghĩa, Q.3, TP.HCM</p>
+                    <p class="text-[10px] text-coffee-600">Hotline: 0938 193 193</p>
+                    <div class="border-b border-dashed border-coffee-300 my-2"></div>
+                    <p class="font-bold">HÓA ĐƠN THANH TOÁN</p>
+                    <p class="text-[10px] text-coffee-700 font-bold" id="receiptOrderId">Mã đơn: #NGAM-000</p>
+                    <p class="text-[10px] text-coffee-500" id="receiptDate">Ngày: --/--/----</p>
+                    <p class="text-[10px] text-coffee-600" id="receiptPaymentMeta">PT: Tiền mặt</p>
+                </div>
+
+                <div class="space-y-1 pt-1" id="receiptItemsList"></div>
+
+                <div class="border-t border-dashed border-coffee-300 pt-2 space-y-1">
+                    <div class="flex justify-between">
+                        <span>Tạm tính:</span>
+                        <span id="receiptSubtotal">0đ</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Giảm giá:</span>
+                        <span id="receiptDiscount">0đ</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span>Thuế VAT (8%):</span>
+                        <span id="receiptVat">0đ</span>
+                    </div>
+                    <div class="flex justify-between font-bold text-sm text-coffee-900 pt-1">
+                        <span>TỔNG CỘNG:</span>
+                        <span id="receiptTotal">0đ</span>
+                    </div>
+                </div>
+
+                <div class="text-center pt-3 text-[10px] text-coffee-600 space-y-1">
+                    <p>Cảm ơn bạn đã ghé Ngâm Cà Phê!</p>
+                    <p class="font-bold text-coffee-800">Wifi: NgamCaphe_193 (Pass: ngamcaphe193)</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 pt-2">
+                <button onclick="window.print()" class="bg-coffee-800 hover:bg-coffee-900 text-amber-200 font-bold py-2 rounded-xl text-xs">
+                    <i class="fa-solid fa-print"></i> In Hóa Đơn
+                </button>
+                <button onclick="closeReceiptModal()" class="bg-coffee-100 hover:bg-coffee-200 text-coffee-800 font-bold py-2 rounded-xl text-xs">
+                    Đóng Cửa Sổ
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 4: LỊCH SỬ ĐƠN HÀNG TRONG CSDL -->
+    <div id="orderHistoryModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-3xl w-full p-5 space-y-4 shadow-2xl animate-fadeIn max-h-[85vh] flex flex-col">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div>
+                    <h3 class="font-bold text-slate-900 text-base">Lịch Sử Đơn Hàng Đã Lưu CSDL</h3>
+                    <p class="text-xs text-slate-400">Tổng hợp toàn bộ hóa đơn tiền mặt & chuyển khoản VietQR</p>
+                </div>
+                <button onclick="closeOrderHistoryModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto custom-scrollbar">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead>
+                        <tr class="bg-slate-900 text-white font-bold">
+                            <th class="p-2.5">Mã Đơn</th>
+                            <th class="p-2.5">Thời Gian</th>
+                            <th class="p-2.5">Khu Vực</th>
+                            <th class="p-2.5">Chi Tiết Món</th>
+                            <th class="p-2.5">Thanh Toán</th>
+                            <th class="p-2.5 text-right">Tổng Tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody id="orderHistoryTableBody" class="divide-y divide-slate-100"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 5: ĐĂNG KÝ CA LÀM VIỆC -->
+    <div id="registerShiftModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl animate-fadeIn">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="font-bold text-slate-900 text-sm">Đăng Ký Ca Làm Việc Tuần Mới</h3>
+                <button onclick="closeRegisterShiftModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleRegisterShift(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">Chọn nhân viên:</label>
+                    <select id="regShiftEmp" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-semibold">
+                        <option value="NV001">NV001 — Nguyễn Thị Lan</option>
+                        <option value="NV002">NV002 — Trần Văn Hùng</option>
+                        <option value="NV003">NV003 — Lê Thị Mai</option>
+                        <option value="NV004">NV004 — Phạm Quốc Bảo</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">Ngày làm trong tuần:</label>
+                    <select id="regShiftDay" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-semibold">
+                        <option value="Thứ 2">Thứ 2</option>
+                        <option value="Thứ 3">Thứ 3</option>
+                        <option value="Thứ 4">Thứ 4</option>
+                        <option value="Thứ 5">Thứ 5</option>
+                        <option value="Thứ 6">Thứ 6</option>
+                        <option value="Thứ 7">Thứ 7</option>
+                        <option value="CN">Chủ Nhật</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">Ca đăng ký:</label>
+                    <select id="regShiftType" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-semibold">
+                        <option value="Sáng">Ca Sáng (07:00 - 15:00)</option>
+                        <option value="Chiều">Ca Chiều (15:00 - 23:00)</option>
+                        <option value="Đêm">Ca Đêm (23:00 - 07:00)</option>
+                        <option value="Off">Xin Nghỉ (Off)</option>
+                    </select>
+                </div>
+
+                <div class="bg-amber-50 border border-amber-200 rounded-xl p-2.5 text-[11px] text-amber-800">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Ca đăng ký mới sẽ mang trạng thái <strong>Chờ duyệt</strong> cho đến khi Quản lý phê duyệt chính thức.
+                </div>
+
+                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 rounded-xl shadow-md transition">
+                    Gửi Đăng Ký Ca (Chờ Duyệt)
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL 6: PHÊ DUYỆT TỪNG CA LÀM VIỆC -->
+    <div id="shiftApprovalModal" class="hidden fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-sm w-full p-5 space-y-4 shadow-2xl animate-fadeIn">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <h3 class="font-bold text-slate-900 text-sm">Phê Duyệt Ca Làm Việc</h3>
+                <button onclick="closeShiftApprovalModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div id="shiftApprovalDetails" class="text-xs space-y-1.5 bg-slate-50 p-3 rounded-xl border border-slate-200"></div>
+            <div class="grid grid-cols-2 gap-2">
+                <button onclick="applySingleShiftDecision('rejected')" class="bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                    <i class="fa-solid fa-xmark mr-1"></i> Từ Chối Ca
+                </button>
+                <button onclick="applySingleShiftDecision('approved')" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2.5 rounded-xl text-xs transition">
+                    <i class="fa-solid fa-check mr-1"></i> Phê Duyệt Ca
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 7: HỆ THỐNG ĐĂNG NHẬP & PHÂN QUYỀN NGƯỜI DÙNG -->
+    <div id="authModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-5 space-y-4 shadow-2xl animate-fadeIn">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-coffee-100 text-coffee-800 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-user-shield"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">Đăng Nhập & Phân Quyền Hệ Thống</h3>
+                        <p class="text-[11px] text-slate-500">Kiểm soát truy cập theo vai trò vận hành quán</p>
+                    </div>
+                </div>
+                <button onclick="closeAuthModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form onsubmit="handleLoginSubmit(event)" class="space-y-3 text-xs">
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">Tên đăng nhập:</label>
+                    <input type="text" id="loginUsername" required placeholder="Nhập tên đăng nhập..." class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-semibold focus:outline-none focus:border-coffee-600">
+                </div>
+                <div>
+                    <label class="block font-bold text-slate-600 mb-1">Mật khẩu:</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 font-semibold focus:outline-none focus:border-coffee-600">
+                </div>
+                <button type="submit" class="w-full bg-coffee-800 hover:bg-coffee-900 text-amber-200 font-bold py-2.5 rounded-xl shadow-md transition">
+                    <i class="fa-solid fa-right-to-bracket mr-1"></i> Đăng Nhập Hệ Thống
+                </button>
+            </form>
+
+            <div class="border-t border-slate-100 pt-3 space-y-2">
+                <p class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Chuyển nhanh tài khoản phân quyền (Demo):</p>
+                <div class="space-y-1.5 text-xs">
+                    <button type="button" onclick="quickLogin('admin')" class="w-full text-left p-2.5 rounded-xl border border-amber-200 bg-amber-50/70 hover:bg-amber-100 flex justify-between items-center transition">
+                        <div>
+                            <span class="font-bold text-coffee-900 block">Quản Lý Trưởng (admin / 123456)</span>
+                            <span class="text-[10px] text-coffee-600">Toàn quyền: POS, Duyệt lịch, Sửa/Khóa lương, CSDL, Liên hệ</span>
+                        </div>
+                        <span class="bg-coffee-800 text-amber-200 text-[10px] font-bold px-2 py-0.5 rounded">Manager</span>
+                    </button>
+                    <button type="button" onclick="quickLogin('thungan')" class="w-full text-left p-2.5 rounded-xl border border-sky-200 bg-sky-50/70 hover:bg-sky-100 flex justify-between items-center transition">
+                        <div>
+                            <span class="font-bold text-slate-900 block">Trần Văn Hùng (thungan / 123456)</span>
+                            <span class="text-[10px] text-slate-600">Thu ngân: Bán hàng POS, VietQR, Chấm công, Đăng ký lịch</span>
+                        </div>
+                        <span class="bg-sky-700 text-white text-[10px] font-bold px-2 py-0.5 rounded">Cashier</span>
+                    </button>
+                    <button type="button" onclick="quickLogin('phache')" class="w-full text-left p-2.5 rounded-xl border border-emerald-200 bg-emerald-50/70 hover:bg-emerald-100 flex justify-between items-center transition">
+                        <div>
+                            <span class="font-bold text-slate-900 block">Nguyễn Thị Lan (phache / 123456)</span>
+                            <span class="text-[10px] text-slate-600">Nhân viên: Chấm công cá nhân, Đăng ký lịch, Xem bảng lương</span>
+                        </div>
+                        <span class="bg-emerald-700 text-white text-[10px] font-bold px-2 py-0.5 rounded">Staff</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL 8: QUẢN TRỊ CƠ SỞ DỮ LIỆU & ĐỒNG BỘ ĐA THIẾT BỊ -->
+    <div id="systemSyncModal" class="hidden fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-5 space-y-4 shadow-2xl animate-fadeIn max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-100">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-900 text-sm">Cơ Sở Dữ Liệu & Đồng Bộ Đa Thiết Bị</h3>
+                        <p class="text-[11px] text-slate-500">Lưu trữ bền vững, đồng bộ đa tab thời gian thực & kết nối thiết bị khác</p>
+                    </div>
+                </div>
+                <button onclick="closeSystemSyncModal()" class="text-slate-400 hover:text-slate-600">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Thống kê CSDL -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center text-xs">
+                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <span class="block font-extrabold text-base text-coffee-800" id="dbStatOrders">0</span>
+                    <span class="text-[10px] text-slate-500">Đơn hàng đã lưu</span>
+                </div>
+                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <span class="block font-extrabold text-base text-emerald-700" id="dbStatAttendance">0</span>
+                    <span class="text-[10px] text-slate-500">Bản ghi chấm công</span>
+                </div>
+                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <span class="block font-extrabold text-base text-sky-700" id="dbStatSchedules">0</span>
+                    <span class="text-[10px] text-slate-500">Nhân sự lịch ca</span>
+                </div>
+                <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                    <span class="block font-extrabold text-base text-amber-700" id="dbStatContacts">0</span>
+                    <span class="text-[10px] text-slate-500">Phiếu liên hệ</span>
+                </div>
+            </div>
+
+            <!-- Đồng bộ đa thiết bị bằng Mã Đồng Bộ / Cloud Endpoint -->
+            <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 text-xs">
+                <div class="flex items-center justify-between">
+                    <h4 class="font-bold text-slate-800"><i class="fa-solid fa-arrows-rotate text-emerald-600 mr-1"></i> Đồng Bộ Dữ Liệu Giữa Nhiều Thiết Bị</h4>
+                    <span class="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full">BroadcastChannel Live Active</span>
+                </div>
+                <p class="text-[11px] text-slate-500">Sao chép <strong>Mã Đồng Bộ Thiết Bị</strong> bên dưới để dán sang điện thoại/máy tính bảng khác, hoặc nhập URL Cloud REST/Firebase Endpoint để đồng bộ trực tuyến.</p>
+
+                <div class="space-y-2">
+                    <div class="flex gap-2">
+                        <input type="text" id="syncTokenOutput" readonly class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono text-[11px] text-slate-600" placeholder="Nhấn Tạo Mã Đồng Bộ...">
+                        <button onclick="generateDeviceSyncToken()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-3 py-2 rounded-xl whitespace-nowrap">Tạo & Copy Mã</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <input type="text" id="syncTokenInput" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white font-mono text-[11px]" placeholder="Dán Mã Đồng Bộ từ thiết bị khác vào đây...">
+                        <button onclick="importDeviceSyncToken()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-2 rounded-xl whitespace-nowrap">Nhận Dữ Liệu</button>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-200 space-y-2">
+                    <label class="block font-bold text-slate-700">Cloud Sync API URL (Tùy chọn Firebase / REST Endpoint):</label>
+                    <div class="flex gap-2">
+                        <input type="url" id="cloudSyncUrlInput" placeholder="https://your-project.firebaseio.com/ngamcaphe.json" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs">
+                        <button onclick="saveCloudSyncUrl()" class="bg-slate-800 hover:bg-slate-900 text-white font-bold px-3 py-2 rounded-xl whitespace-nowrap">Lưu URL</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cấu hình Tài khoản Ngân hàng VietQR -->
+            <div class="bg-sky-50/70 p-4 rounded-xl border border-sky-200 space-y-2.5 text-xs">
+                <h4 class="font-bold text-sky-900"><i class="fa-solid fa-building-columns text-sky-700 mr-1"></i> Cấu Hình Tài Khoản Nhận VietQR</h4>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Mã Ngân Hàng (BIN/ShortName)</label>
+                        <select id="cfgBankId" class="w-full px-2.5 py-1.5 rounded-lg border border-sky-200 bg-white font-semibold">
+                            <option value="MB">MB Bank</option>
+                            <option value="VCB">Vietcombank</option>
+                            <option value="TCB">Techcombank</option>
+                            <option value="ACB">ACB</option>
+                            <option value="BIDV">BIDV</option>
+                            <option value="VPB">VPBank</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Số Tài Khoản</label>
+                        <input type="text" id="cfgAccountNo" class="w-full px-2.5 py-1.5 rounded-lg border border-sky-200 bg-white font-mono font-bold">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-slate-600 mb-1">Tên Chủ Tài Khoản</label>
+                        <input type="text" id="cfgAccountName" class="w-full px-2.5 py-1.5 rounded-lg border border-sky-200 bg-white font-bold uppercase">
+                    </div>
+                </div>
+                <button onclick="saveBankConfig()" class="bg-sky-700 hover:bg-sky-800 text-white font-bold px-3.5 py-1.5 rounded-lg text-xs">Lưu Cấu Hình Ngân Hàng</button>
+            </div>
+
+            <!-- Sao lưu / Khôi phục tệp JSON -->
+            <div class="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-slate-100 text-xs">
+                <div class="flex flex-wrap gap-2">
+                    <button onclick="exportDatabaseFile()" class="bg-coffee-800 hover:bg-coffee-900 text-amber-200 font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i> Xuất File CSDL (.JSON)
+                    </button>
+                    <label class="bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-3.5 py-2 rounded-xl flex items-center gap-1.5 cursor-pointer">
+                        <i class="fa-solid fa-upload"></i> Nhập File CSDL (.JSON)
+                        <input type="file" accept=".json" onchange="importDatabaseFile(event)" class="hidden">
+                    </label>
+                </div>
+                <button onclick="resetDatabaseToDefault()" class="bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold px-3 py-2 rounded-xl">
+                    <i class="fa-solid fa-rotate-left"></i> Khôi Phục Mặc Định
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* =====================================================================
+           1. CƠ SỞ DỮ LIỆU LƯU TRỮ LÂU DÀI (NgamDB) & ĐỒNG BỘ ĐA THIẾT BỊ
+           ===================================================================== */
+        const DB_STORAGE_KEY = 'NGAM_CAPHE_PERSISTENT_DB_V2';
+        const SYNC_CHANNEL_NAME = 'ngam_caphe_multidevice_sync';
+        const syncChannel = ('BroadcastChannel' in window) ? new BroadcastChannel(SYNC_CHANNEL_NAME) : null;
+
+        const productsData = [
+            { id: 1, name: 'Cà Phê Phin Ngâm Đậm Vị', category: 'signature', price: 35000, image: 'https://cdn1894.cdn4s4.io.vn/media/blog-cafe/basin-faucet-list22-04-14.jpeg', isPopular: true },
+            { id: 2, name: 'Cold Brew Ngâm Hoa Cúc', category: 'signature', price: 45000, image: 'https://mir-s3-cdn-cf.behance.net/project_modules/1400_webp/549b96200399101.673ad2dfbeb4a.jpg', isPopular: true },
+            { id: 3, name: 'Bạc Xỉu Sữa Dừa Ngâm', category: 'signature', price: 39000, image: 'https://148729185.cdn6.editmysite.com/uploads/1/4/8/7/148729185/RTELTY7VHPS2ZYEWQPDSUETA.png', isPopular: true },
+            { id: 4, name: 'Cà Phê Sữa Đá Sài Gòn', category: 'coffee', price: 29000, image: 'https://snapcalorie-webflow-website.s3.us-east-2.amazonaws.com/media/food_pics_v2/vietnamese_coffee.jpg', isPopular: false },
+            { id: 5, name: 'Cà Phê Đen Phin', category: 'coffee', price: 25000, image: 'https://d1w7312wesee68.cloudfront.net/Bt5Z9_fe6ZztFJgp9g1v4C1Fcby-cw7VDajUHVhdGy0/resize%3Afit%3A720%3A720/plain/s3%3A/toasttab/menu_service/restaurants/b3e9e456-5f77-4857-b957-6135bb8bd90c/MenuItem/b6560203-91c1-42c0-a0f9-36b0037d1014.png', isPopular: false },
+            { id: 6, name: 'Espresso Ristretto', category: 'coffee', price: 32000, image: 'https://mir-s3-cdn-cf.behance.net/project_modules/fs/a2d1ad162741679.63da7ddd55835.jpg', isPopular: false },
+            { id: 7, name: 'Trà Vải Hoa Lài Ngâm', category: 'tea', price: 42000, image: 'https://images2.thanhnien.vn/528068263637045248/2024/5/16/cac-san-pham-thuoc-nhom-tea-espresso-tai-felota-bakery--tea-17158200314011822772607.jpg', isPopular: true },
+            { id: 8, name: 'Trà Đào Cam Sả Mật Ong', category: 'tea', price: 39000, image: 'https://img.mservice.com.vn/common/u/2e02fb5fe4f64fb55bc713540643c6f8eae702d101cea8c59afc49cfc505fc37/edaf9a2a-552f-4eca-8ece-b30065161a40k4hirxhc.jpeg', isPopular: false },
+            { id: 9, name: 'Bánh Chuối Nướng Mật Mía', category: 'snack', price: 28000, image: 'https://3.bp.blogspot.com/-lTSIDeip8Js/WIhlqh1jQYI/AAAAAAABziA/h3ipduIUlKgzY1S8Ar_pZhlmvajVL8gSQCLcB/s1600/DSCF1830-001.jpg', isPopular: true },
+            { id: 10, name: 'Bánh Croissant Bơ Thơm', category: 'snack', price: 32000, image: 'https://cdn.broadsheet.com.au/cache/01/61/016109f36b2c822d4e5cddc1486a4f9b.jpg', isPopular: false },
+        ];
+
+        const systemUsers = [
+            { username: 'admin', password: '123456', name: 'Quản Lý Trưởng', role: 'manager', roleLabel: 'Toàn quyền quản trị', avatar: 'QL' },
+            { username: 'thungan', password: '123456', name: 'Trần Văn Hùng', role: 'cashier', roleLabel: 'Thu Ngân Quầy', avatar: 'TH' },
+            { username: 'phache', password: '123456', name: 'Nguyễn Thị Lan', role: 'staff', roleLabel: 'Nhân Viên Pha Chế', avatar: 'NL' },
+            { username: 'phucvu', password: '123456', name: 'Lê Thị Mai', role: 'staff', roleLabel: 'Nhân Viên Phục Vụ', avatar: 'LM' },
+        ];
+
+        function getDefaultDatabaseState() {
+            return {
+                version: 3,
+                inventory: [
+                    {id:'NL001',name:'Cà phê hạt',qty:5000,unit:'g',min:1000},
+                    {id:'NL002',name:'Sữa đặc',qty:3000,unit:'ml',min:800},
+                    {id:'NL003',name:'Sữa tươi',qty:5000,unit:'ml',min:1000},
+                    {id:'NL004',name:'Trà đào',qty:2500,unit:'g',min:500},
+                    {id:'NL005',name:'Đường',qty:3000,unit:'g',min:500},
+                    {id:'NL006',name:'Ly mang đi',qty:300,unit:'cái',min:50}
+                ],
+                stockHistory: [], expenses: [], suppliers: [], purchaseReceipts: [], tableStatuses: {}, staffProfiles: [], staffRequests: [],
+                lastUpdated: new Date().toISOString(),
+                cloudSyncUrl: '',
+                bankConfig: {
+                    bankId: 'MB',
+                    bankName: 'MB Bank (Ngân hàng Quân Đội)',
+                    accountNo: '0938193193',
+                    accountName: 'NGAM CA PHE'
+                },
+                orders: [
+                    {
+                        orderId: 'NGAM-261101',
+                        createdAt: '09/11/2026 08:45:12',
+                        table: 'Bàn Gỗ 01',
+                        items: [{ name: 'Cà Phê Phin Ngâm Đậm Vị (M)', quantity: 2, unitPrice: 40000 }],
+                        subtotal: 80000,
+                        discount: 0,
+                        vat: 6400,
+                        total: 86400,
+                        method: 'vietqr',
+                        bankRef: 'FT2631398412',
+                        cashier: 'Quản Lý Trưởng'
+                    }
+                ],
+                attendanceLogs: [
+                    { empId: 'NV001', name: 'Nguyễn Thị Lan', shift: 'Ca Sáng (07:00-15:00)', inTime: '06:55 AM', outTime: '--:--', status: 'Đúng giờ', note: 'Mở cửa quán' },
+                    { empId: 'NV002', name: 'Trần Văn Hùng', shift: 'Ca Sáng (07:00-15:00)', inTime: '07:12 AM', outTime: '--:--', status: 'Đi muộn', note: 'Kẹt xe' },
+                    { empId: 'NV003', name: 'Lê Thị Mai', shift: 'Ca Sáng (07:00-15:00)', inTime: '06:58 AM', outTime: '--:--', status: 'Đúng giờ', note: '' },
+                ],
+                scheduleMatrix: [
+                    {
+                        empId: 'NV001', name: 'Nguyễn Thị Lan', role: 'Pha chế',
+                        shifts: {
+                            'Thứ 2': { shift: 'Sáng', status: 'approved' },
+                            'Thứ 3': { shift: 'Sáng', status: 'approved' },
+                            'Thứ 4': { shift: 'Chiều', status: 'pending' },
+                            'Thứ 5': { shift: 'Sáng', status: 'approved' },
+                            'Thứ 6': { shift: 'Sáng', status: 'approved' },
+                            'Thứ 7': { shift: 'Off', status: 'approved' },
+                            'CN': { shift: 'Đêm', status: 'pending' }
+                        }
+                    },
+                    {
+                        empId: 'NV002', name: 'Trần Văn Hùng', role: 'Thu ngân',
+                        shifts: {
+                            'Thứ 2': { shift: 'Chiều', status: 'approved' },
+                            'Thứ 3': { shift: 'Chiều', status: 'approved' },
+                            'Thứ 4': { shift: 'Off', status: 'approved' },
+                            'Thứ 5': { shift: 'Chiều', status: 'approved' },
+                            'Thứ 6': { shift: 'Đêm', status: 'pending' },
+                            'Thứ 7': { shift: 'Sáng', status: 'approved' },
+                            'CN': { shift: 'Sáng', status: 'approved' }
+                        }
+                    },
+                    {
+                        empId: 'NV003', name: 'Lê Thị Mai', role: 'Phục vụ',
+                        shifts: {
+                            'Thứ 2': { shift: 'Sáng', status: 'approved' },
+                            'Thứ 3': { shift: 'Off', status: 'approved' },
+                            'Thứ 4': { shift: 'Sáng', status: 'approved' },
+                            'Thứ 5': { shift: 'Sáng', status: 'approved' },
+                            'Thứ 6': { shift: 'Chiều', status: 'approved' },
+                            'Thứ 7': { shift: 'Chiều', status: 'pending' },
+                            'CN': { shift: 'Off', status: 'approved' }
+                        }
+                    },
+                    {
+                        empId: 'NV004', name: 'Phạm Quốc Bảo', role: 'Bảo vệ',
+                        shifts: {
+                            'Thứ 2': { shift: 'Đêm', status: 'approved' },
+                            'Thứ 3': { shift: 'Đêm', status: 'approved' },
+                            'Thứ 4': { shift: 'Đêm', status: 'approved' },
+                            'Thứ 5': { shift: 'Off', status: 'approved' },
+                            'Thứ 6': { shift: 'Sáng', status: 'approved' },
+                            'Thứ 7': { shift: 'Sáng', status: 'approved' },
+                            'CN': { shift: 'Chiều', status: 'approved' }
+                        }
+                    }
+                ],
+                isPayrollLocked: false,
+                payrollData: [
+                    { id: 'NV001', name: 'Nguyễn Thị Lan', role: 'Pha chế', rate: 25000, hours: 180, bonus: 500000, penalty: 0 },
+                    { id: 'NV002', name: 'Trần Văn Hùng', role: 'Thu ngân', rate: 23000, hours: 175, bonus: 300000, penalty: 50000 },
+                    { id: 'NV003', name: 'Lê Thị Mai', role: 'Phục vụ', rate: 20000, hours: 160, bonus: 200000, penalty: 0 },
+                    { id: 'NV004', name: 'Phạm Quốc Bảo', role: 'Bảo vệ', rate: 22000, hours: 195, bonus: 400000, penalty: 100000 },
+                ],
+                contactMessages: [
+                    {
+                        ticketId: 'LH-2601',
+                        name: 'Minh Anh',
+                        phone: '0908 112 233',
+                        topic: 'Đặt bàn trước cho nhóm',
+                        message: 'Đặt bàn góc ban công cho 4 người vào tối Thứ 6 lúc 19:30.',
+                        createdAt: '09/11/2026 14:20',
+                        status: 'Mới tiếp nhận'
+                    }
+                ]
+            };
+        }
+
+        function loadDatabase() {
+            try {
+                const raw = localStorage.getItem(DB_STORAGE_KEY);
+                if (!raw) {
+                    const initial = getDefaultDatabaseState();
+                    localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(initial));
+                    return initial;
+                }
+                const parsed = JSON.parse(raw);
+                const fallback = getDefaultDatabaseState();
+                return { ...fallback, ...parsed };
+            } catch (err) {
+                console.error('Lỗi đọc CSDL:', err);
+                return getDefaultDatabaseState();
+            }
+        }
+
+        let dbState = loadDatabase();
+        ['inventory','stockHistory','expenses','suppliers','purchaseReceipts','staffProfiles','staffRequests'].forEach(k => { if (!Array.isArray(dbState[k])) dbState[k] = getDefaultDatabaseState()[k] || []; });
+        if (!dbState.tableStatuses) dbState.tableStatuses = {};
+        let currentUser = JSON.parse(sessionStorage.getItem('NGAM_CURRENT_USER') || 'null') || systemUsers[0];
+
+        function persistDatabase(reason = 'Cập nhật dữ liệu') {
+            dbState.lastUpdated = new Date().toISOString();
+            localStorage.setItem(DB_STORAGE_KEY, JSON.stringify(dbState));
+
+            const timeStr = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            const syncTextEl = document.getElementById('syncStatusText');
+            if (syncTextEl) {
+                syncTextEl.innerText = `Đã lưu CSDL • ${timeStr}`;
+            }
+
+            if (syncChannel) {
+                syncChannel.postMessage({ type: 'DB_UPDATED', reason, timestamp: dbState.lastUpdated });
+            }
+
+            if (dbState.cloudSyncUrl) {
+                fetch(dbState.cloudSyncUrl, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dbState)
+                }).catch(() => {});
+            }
+            updateBadgesAndStats();
+        }
+
+        if (syncChannel) {
+            syncChannel.onmessage = (event) => {
+                if (event.data && event.data.type === 'DB_UPDATED') {
+                    dbState = loadDatabase();
+                    refreshAllViews();
+                    showToast(`Đồng bộ đa thiết bị/tab: ${event.data.reason}`, 'info');
+                }
+            };
+        }
+
+        window.addEventListener('storage', (e) => {
+            if (e.key === DB_STORAGE_KEY && e.newValue) {
+                dbState = JSON.parse(e.newValue);
+                refreshAllViews();
+                showToast('Dữ liệu vừa được đồng bộ từ tab/cửa sổ khác!', 'info');
+            }
+        });
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toastContainer');
+            if (!container) return;
+            const colors = {
+                success: 'bg-emerald-900 text-emerald-100 border-emerald-600',
+                error: 'bg-rose-900 text-rose-100 border-rose-600',
+                info: 'bg-coffee-900 text-amber-200 border-amber-500'
+            };
+            const icons = {
+                success: 'fa-circle-check text-emerald-400',
+                error: 'fa-triangle-exclamation text-rose-400',
+                info: 'fa-arrows-rotate text-amber-400'
+            };
+            const el = document.createElement('div');
+            el.className = `pointer-events-auto px-4 py-3 rounded-xl border shadow-lg text-xs font-semibold flex items-center gap-2.5 animate-fadeIn ${colors[type] || colors.info}`;
+            el.innerHTML = `<i class="fa-solid ${icons[type] || icons.info}"></i><span>${message}</span>`;
+            container.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = '0';
+                el.style.transition = 'opacity 0.3s ease';
+                setTimeout(() => el.remove(), 300);
+            }, 3500);
+        }
+
+        /* =====================================================================
+           2. HỆ THỐNG ĐĂNG NHẬP & PHÂN QUYỀN NGƯỜI DÙNG (RBAC)
+           ===================================================================== */
+        function hasPermission(action) {
+            const role = currentUser ? currentUser.role : 'guest';
+            const permissions = {
+                manager: ['pos', 'attendance', 'schedule_register', 'schedule_approve', 'payroll_view', 'payroll_edit', 'contact_manage', 'db_admin'],
+                cashier: ['pos', 'attendance', 'schedule_register', 'payroll_view', 'contact_manage'],
+                staff: ['attendance', 'schedule_register', 'payroll_view']
+            };
+            return (permissions[role] || []).includes(action);
+        }
+
+        function applyRolePermissionsUI() {
+            document.getElementById('currentUserName').innerText = currentUser.name;
+            document.getElementById('currentUserRoleBadge').innerText = currentUser.roleLabel;
+            document.getElementById('currentUserAvatar').innerText = currentUser.avatar;
+
+            const banner = document.getElementById('roleBanner');
+            const bannerText = document.getElementById('roleBannerText');
+
+            if (currentUser.role === 'manager') {
+                banner.classList.add('hidden');
+            } else if (currentUser.role === 'cashier') {
+                banner.classList.remove('hidden');
+                bannerText.innerText = `Đang đăng nhập vai trò THU NGÂN (${currentUser.name}): Được phép thu tiền POS & chấm công; bị khóa quyền duyệt lịch làm & chỉnh sửa/khóa lương.`;
+            } else {
+                banner.classList.remove('hidden');
+                bannerText.innerText = `Đang đăng nhập vai trò NHÂN VIÊN (${currentUser.name}): Chỉ được chấm công cá nhân, đăng ký lịch làm & xem phiếu lương.`;
+            }
+
+            // Phân quyền nút duyệt lịch & khóa lương
+            const approveBtn = document.getElementById('btnApproveAllShifts');
+            if (approveBtn) {
+                approveBtn.classList.toggle('opacity-40', !hasPermission('schedule_approve'));
+                approveBtn.classList.toggle('cursor-not-allowed', !hasPermission('schedule_approve'));
+            }
+
+            const lockPayrollBtn = document.getElementById('payrollLockButton');
+            if (lockPayrollBtn) {
+                lockPayrollBtn.classList.toggle('opacity-40', !hasPermission('payroll_edit'));
+                lockPayrollBtn.classList.toggle('cursor-not-allowed', !hasPermission('payroll_edit'));
+            }
+
+            // Phân quyền nút thanh toán POS
+            const btnQR = document.getElementById('btnPayVietQR');
+            const btnCash = document.getElementById('btnPayCash');
+            const canPOS = hasPermission('pos');
+            if (btnQR && btnCash) {
+                btnQR.classList.toggle('opacity-40', !canPOS);
+                btnCash.classList.toggle('opacity-40', !canPOS);
+            }
+
+            renderScheduleMatrix();
+            renderPayrollTable();
+            renderContactMessages();
+        }
+
+        function openAuthModal() {
+            document.getElementById('authModal').classList.remove('hidden');
+        }
+
+        function closeAuthModal() {
+            document.getElementById('authModal').classList.add('hidden');
+        }
+
+        function handleLoginSubmit(e) {
+            e.preventDefault();
+            const username = document.getElementById('loginUsername').value.trim();
+            const password = document.getElementById('loginPassword').value.trim();
+            const found = systemUsers.find(u => u.username === username && u.password === password);
+            if (!found) {
+                showToast('Sai tên đăng nhập hoặc mật khẩu!', 'error');
+                return;
+            }
+            currentUser = found;
+            sessionStorage.setItem('NGAM_CURRENT_USER', JSON.stringify(currentUser));
+            applyRolePermissionsUI();
+            closeAuthModal();
+            showToast(`Xin chào ${currentUser.name} (${currentUser.roleLabel})`, 'success');
+        }
+
+        function quickLogin(username) {
+            const found = systemUsers.find(u => u.username === username);
+            if (!found) return;
+            currentUser = found;
+            sessionStorage.setItem('NGAM_CURRENT_USER', JSON.stringify(currentUser));
+            applyRolePermissionsUI();
+            closeAuthModal();
+            showToast(`Đã chuyển sang tài khoản ${currentUser.name} (${currentUser.roleLabel})`, 'success');
+        }
+
+        /* =====================================================================
+           3. POS BÁN HÀNG & THANH TOÁN VIETQR KẾT NỐI NGÂN HÀNG
+           ===================================================================== */
+        let cart = [];
+        let appliedDiscount = 0;
+        let selectedProductForModal = null;
+        let selectedSizeOptions = { size: 'S', extraPrice: 0 };
+        let pendingVietQROrder = null;
+        let qrCountdownInterval = null;
+
+        function startClock() {
+            const update = () => {
+                const now = new Date();
+                document.getElementById('clockDisplay').innerText = now.toLocaleTimeString('vi-VN');
+            };
+            update();
+            setInterval(update, 1000);
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('mobileMenu').classList.toggle('hidden');
+        }
+
+        function switchModule(moduleId) {
+            document.querySelectorAll('.module-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.module-nav-btn').forEach(btn => btn.classList.remove('active-tab'));
+
+            const targetSection = document.getElementById(`module-${moduleId}`);
+            const targetNavBtn = document.getElementById(`nav-${moduleId}`);
+
+            if (targetSection) targetSection.classList.remove('hidden');
+            if (targetNavBtn) targetNavBtn.classList.add('active-tab');
+            if (['dashboard','inventory','tables','procurement','expenses','staffplus','reports','settings'].includes(moduleId)) renderNewModules();
+        }
+
+        function updateCartTableLabel() {
+            const val = document.getElementById('tableSelect').value;
+            document.getElementById('cartTableDisplay').innerText = `Khu vực: ${val}`;
+        }
+
+        function renderProducts(items) {
+            const grid = document.getElementById('productGrid');
+            grid.innerHTML = items.map(p => `
+                <div onclick="openProductOptionsModal(${p.id})" class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80 hover:shadow-md hover:border-coffee-500/40 transition cursor-pointer flex flex-col justify-between space-y-2 group">
+                    <div class="relative w-full h-36 bg-coffee-50 rounded-xl overflow-hidden group-hover:shadow-md transition">
+                        <img src="${p.image}" alt="${p.name}" loading="lazy" referrerpolicy="no-referrer" class="w-full h-full object-cover transition duration-300 group-hover:scale-105" onerror="this.onerror=null;this.src='https://img.vietcetera.com/uploads/images/25-apr-2024/insta-dia-phuong-768x512.jpg';">
+                        ${p.isPopular ? `<span class="absolute top-2 left-2 bg-amber-400 text-slate-900 font-extrabold text-[9px] px-2 py-0.5 rounded-full shadow-sm">HOT</span>` : ''}
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 text-xs line-clamp-1 group-hover:text-coffee-700 transition">${p.name}</h4>
+                        <p class="text-coffee-700 font-extrabold text-xs mt-0.5">${p.price.toLocaleString('vi-VN')}đ</p>
+                    </div>
+                    <button class="w-full bg-coffee-100 group-hover:bg-coffee-800 group-hover:text-amber-200 text-coffee-900 text-[11px] font-bold py-1.5 rounded-xl transition flex items-center justify-center gap-1">
+                        <i class="fa-solid fa-plus"></i> Chọn Món
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function filterProducts() {
+            const query = document.getElementById('posSearchInput').value.toLowerCase();
+            const filtered = productsData.filter(p => p.name.toLowerCase().includes(query));
+            renderProducts(filtered);
+        }
+
+        function selectCategory(cat, ev) {
+            document.querySelectorAll('.cat-btn').forEach(b => {
+                b.className = 'cat-btn bg-coffee-100 text-coffee-800 hover:bg-coffee-200 px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition';
+            });
+            if (ev && ev.target) {
+                ev.target.className = 'cat-btn bg-coffee-700 text-white px-4 py-2 rounded-xl text-xs font-bold whitespace-nowrap shadow-sm transition';
+            }
+            if (cat === 'all') renderProducts(productsData);
+            else renderProducts(productsData.filter(p => p.category === cat));
+        }
+
+        function openProductOptionsModal(productId) {
+            selectedProductForModal = productsData.find(p => p.id === productId);
+            if (!selectedProductForModal) return;
+
+            document.getElementById('modalProductName').innerText = selectedProductForModal.name;
+            document.getElementById('modalItemNote').value = '';
+            selectModalSize('S', 0);
+            document.getElementById('productOptionsModal').classList.remove('hidden');
+        }
+
+        function closeProductOptionsModal() {
+            document.getElementById('productOptionsModal').classList.add('hidden');
+        }
+
+        function selectModalSize(size, extraPrice, ev) {
+            selectedSizeOptions = { size, extraPrice };
+            const btns = document.querySelectorAll('.size-opt-btn');
+            btns.forEach((btn, idx) => {
+                const sizes = ['S', 'M', 'L'];
+                if (sizes[idx] === size) {
+                    btn.className = 'size-opt-btn border-2 border-coffee-700 bg-coffee-100 text-coffee-900 font-bold py-2 rounded-xl text-xs';
+                } else {
+                    btn.className = 'size-opt-btn border-2 border-slate-200 font-semibold text-slate-600 py-2 rounded-xl text-xs';
+                }
+            });
+        }
+
+        function confirmAddToCartWithOptions() {
+            const note = document.getElementById('modalItemNote').value.trim();
+            const finalPrice = selectedProductForModal.price + selectedSizeOptions.extraPrice;
+            const itemKey = `${selectedProductForModal.id}-${selectedSizeOptions.size}-${note}`;
+
+            const existingIndex = cart.findIndex(c => c.key === itemKey);
+            if (existingIndex > -1) {
+                cart[existingIndex].quantity += 1;
+            } else {
+                cart.push({
+                    key: itemKey,
+                    id: selectedProductForModal.id,
+                    name: `${selectedProductForModal.name} (${selectedSizeOptions.size})`,
+                    unitPrice: finalPrice,
+                    quantity: 1,
+                    note: note
+                });
+            }
+
+            closeProductOptionsModal();
+            renderCart();
+        }
+
+        function updateCartQty(key, delta) {
+            const item = cart.find(c => c.key === key);
+            if (item) {
+                item.quantity += delta;
+                if (item.quantity <= 0) {
+                    cart = cart.filter(c => c.key !== key);
+                }
+            }
+            renderCart();
+        }
+
+        function clearCart() {
+            cart = [];
+            appliedDiscount = 0;
+            document.getElementById('voucherInput').value = '';
+            document.getElementById('cashReceivedInput').value = '';
+            renderCart();
+        }
+
+        function applyVoucher() {
+            const code = document.getElementById('voucherInput').value.trim().toUpperCase();
+            if (code === 'NGAM10') {
+                appliedDiscount = 10000;
+                showToast('Áp dụng mã NGAM10 thành công! Giảm 10.000đ.', 'success');
+            } else {
+                showToast('Mã giảm giá không hợp lệ (Thử mã: NGAM10)', 'error');
+            }
+            renderCart();
+        }
+
+        function calculateCartTotals() {
+            const subtotal = cart.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+            const vat = Math.round(subtotal * 0.08);
+            const total = Math.max(0, subtotal - appliedDiscount + vat);
+            return { subtotal, discount: appliedDiscount, vat, total };
+        }
+
+        function renderCart() {
+            const cartList = document.getElementById('cartItemList');
+            const emptyState = document.getElementById('emptyCartState');
+
+            if (cart.length === 0) {
+                cartList.innerHTML = '';
+                cartList.appendChild(emptyState);
+            } else {
+                cartList.innerHTML = cart.map(item => `
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200/80 flex justify-between items-center text-xs">
+                        <div class="space-y-0.5">
+                            <h5 class="font-bold text-slate-800">${item.name}</h5>
+                            <p class="text-coffee-700 font-bold">${item.unitPrice.toLocaleString('vi-VN')}đ</p>
+                            ${item.note ? `<p class="text-[10px] text-amber-600 italic">Ghi chú: ${item.note}</p>` : ''}
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="updateCartQty('${item.key}', -1)" class="w-6 h-6 rounded-lg bg-white border border-slate-200 font-bold flex items-center justify-center hover:bg-slate-100">-</button>
+                            <span class="font-bold text-slate-800 w-4 text-center">${item.quantity}</span>
+                            <button onclick="updateCartQty('${item.key}', 1)" class="w-6 h-6 rounded-lg bg-white border border-slate-200 font-bold flex items-center justify-center hover:bg-slate-100">+</button>
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            const { subtotal, discount, vat, total } = calculateCartTotals();
+            document.getElementById('summarySubtotal').innerText = `${subtotal.toLocaleString('vi-VN')}đ`;
+            document.getElementById('summaryDiscount').innerText = `-${discount.toLocaleString('vi-VN')}đ`;
+            document.getElementById('summaryVat').innerText = `${vat.toLocaleString('vi-VN')}đ`;
+            document.getElementById('summaryTotal').innerText = `${total.toLocaleString('vi-VN')}đ`;
+
+            calculateChange();
+        }
+
+        function calculateChange() {
+            const received = parseFloat(document.getElementById('cashReceivedInput').value) || 0;
+            const { total } = calculateCartTotals();
+            const change = received - total;
+            document.getElementById('changeOutput').innerText = change >= 0 ? `${change.toLocaleString('vi-VN')}đ` : 'Chưa đủ tiền';
+        }
+
+        function openVietQRPaymentModal() {
+            if (!hasPermission('pos')) {
+                showToast('Tài khoản của bạn không có quyền thực hiện thanh toán POS!', 'error');
+                return;
+            }
+            if (cart.length === 0) {
+                showToast('Vui lòng chọn ít nhất 1 món vào đơn hàng!', 'error');
+                return;
+            }
+
+            const totals = calculateCartTotals();
+            const orderId = 'NGAM' + Math.floor(100000 + Math.random() * 900000);
+            const bank = dbState.bankConfig;
+            const qrUrl = `https://img.vietqr.io/image/${encodeURIComponent(bank.bankId)}-${encodeURIComponent(bank.accountNo)}-compact2.png?amount=${totals.total}&addInfo=${encodeURIComponent(orderId)}&accountName=${encodeURIComponent(bank.accountName)}`;
+
+            pendingVietQROrder = {
+                orderId,
+                table: document.getElementById('tableSelect').value,
+                items: JSON.parse(JSON.stringify(cart)),
+                ...totals
+            };
+
+            document.getElementById('vietqrImage').src = qrUrl;
+            document.getElementById('qrBankName').innerText = bank.bankName;
+            document.getElementById('qrAccountNo').innerText = bank.accountNo;
+            document.getElementById('qrAccountHolder').innerText = bank.accountName;
+            document.getElementById('qrAmountDisplay').innerText = `${totals.total.toLocaleString('vi-VN')}đ`;
+            document.getElementById('qrTransferMemo').innerText = orderId;
+
+            const statusBox = document.getElementById('bankVerifyStatusBox');
+            statusBox.className = 'bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs flex items-center justify-between';
+            document.getElementById('bankVerifyText').innerText = 'Đang chờ tín hiệu biến động số dư ngân hàng...';
+
+            clearInterval(qrCountdownInterval);
+            let secondsLeft = 300;
+            const updateTimer = () => {
+                const m = String(Math.floor(secondsLeft / 60)).padStart(2, '0');
+                const s = String(secondsLeft % 60).padStart(2, '0');
+                document.getElementById('qrCountdown').innerText = `${m}:${s}`;
+                if (secondsLeft <= 0) clearInterval(qrCountdownInterval);
+                secondsLeft--;
+            };
+            updateTimer();
+            qrCountdownInterval = setInterval(updateTimer, 1000);
+
+            document.getElementById('vietqrModal').classList.remove('hidden');
+        }
+
+        function closeVietQRModal() {
+            clearInterval(qrCountdownInterval);
+            document.getElementById('vietqrModal').classList.add('hidden');
+        }
+
+        function verifyAndCompleteVietQR() {
+            if (!pendingVietQROrder) return;
+            const btn = document.getElementById('btnVerifyVietQR');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang đối soát...';
+
+            setTimeout(() => {
+                const bankRef = 'FT' + Date.now().toString().slice(-10);
+                const statusBox = document.getElementById('bankVerifyStatusBox');
+                statusBox.className = 'bg-emerald-50 border border-emerald-300 rounded-xl p-3 text-xs flex items-center justify-between';
+                document.getElementById('bankVerifyText').innerHTML = `<span class="text-emerald-800 font-bold"><i class="fa-solid fa-circle-check text-emerald-600 mr-1"></i> Đã nhận ${pendingVietQROrder.total.toLocaleString('vi-VN')}đ (Mã GD: ${bankRef})</span>`;
+
+                const finalizedOrder = {
+                    ...pendingVietQROrder,
+                    createdAt: new Date().toLocaleString('vi-VN'),
+                    method: 'vietqr',
+                    bankRef: bankRef,
+                    cashier: currentUser.name
+                };
+
+                if (!deductRecipeFromOrder(finalizedOrder)) { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Xác nhận (bản demo) & Xuất Hóa Đơn'; return; }
+                finalizedOrder.status = 'paid';
+                dbState.orders.unshift(finalizedOrder);
+                persistDatabase(`Thanh toán VietQR đơn #${finalizedOrder.orderId}`);
+                renderNewModules();
+
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-check-double"></i> Xác nhận (bản demo) & Xuất Hóa Đơn';
+                closeVietQRModal();
+                showReceiptForOrder(finalizedOrder);
+                showToast(`Xác nhận chuyển khoản VietQR thành công (${bankRef})!`, 'success');
+            }, 700);
+        }
+
+        function processPayment(method) {
+            if (!hasPermission('pos')) {
+                showToast('Tài khoản của bạn không có quyền thực hiện thanh toán POS!', 'error');
+                return;
+            }
+            if (cart.length === 0) {
+                showToast('Vui lòng chọn ít nhất 1 món vào đơn hàng!', 'error');
+                return;
+            }
+
+            const totals = calculateCartTotals();
+            if (method === 'cash') {
+                const received = parseFloat(document.getElementById('cashReceivedInput').value) || 0;
+                if (received < totals.total) {
+                    showToast('Số tiền khách đưa chưa đủ để thanh toán!', 'error');
+                    return;
+                }
+            }
+
+            const finalizedOrder = {
+                orderId: 'NGAM' + Math.floor(100000 + Math.random() * 900000),
+                createdAt: new Date().toLocaleString('vi-VN'),
+                table: document.getElementById('tableSelect').value,
+                items: JSON.parse(JSON.stringify(cart)),
+                ...totals,
+                method: 'cash',
+                bankRef: null,
+                cashier: currentUser.name
+            };
+
+            if (!deductRecipeFromOrder(finalizedOrder)) return;
+            finalizedOrder.status = 'paid';
+            dbState.orders.unshift(finalizedOrder);
+            persistDatabase(`Thanh toán tiền mặt đơn #${finalizedOrder.orderId}`);
+            renderNewModules();
+            showReceiptForOrder(finalizedOrder);
+            showToast(`Đã lưu đơn hàng #${finalizedOrder.orderId} vào CSDL!`, 'success');
+        }
+
+        function showReceiptForOrder(order) {
+            document.getElementById('receiptOrderId').innerText = `Mã đơn: #${order.orderId} • ${order.table}`;
+            document.getElementById('receiptDate').innerText = `Ngày: ${order.createdAt}`;
+            document.getElementById('receiptPaymentMeta').innerText = order.method === 'vietqr'
+                ? `PT: Chuyển khoản VietQR (GD: ${order.bankRef})`
+                : `PT: Tiền mặt • Thu ngân: ${order.cashier}`;
+            document.getElementById('receiptSubtotal').innerText = `${order.subtotal.toLocaleString('vi-VN')}đ`;
+            document.getElementById('receiptDiscount').innerText = `-${order.discount.toLocaleString('vi-VN')}đ`;
+            document.getElementById('receiptVat').innerText = `${order.vat.toLocaleString('vi-VN')}đ`;
+            document.getElementById('receiptTotal').innerText = `${order.total.toLocaleString('vi-VN')}đ`;
+
+            document.getElementById('receiptItemsList').innerHTML = order.items.map(item => `
+                <div class="flex justify-between">
+                    <span>${item.quantity}x ${item.name}</span>
+                    <span>${(item.unitPrice * item.quantity).toLocaleString('vi-VN')}đ</span>
+                </div>
+            `).join('');
+
+            document.getElementById('receiptModal').classList.remove('hidden');
+        }
+
+        function closeReceiptModal() {
+            document.getElementById('receiptModal').classList.add('hidden');
+            clearCart();
+        }
+
+        function openOrderHistoryModal() {
+            const tbody = document.getElementById('orderHistoryTableBody');
+            if (dbState.orders.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-slate-400">Chưa có đơn hàng nào được lưu trong CSDL.</td></tr>`;
+            } else {
+                tbody.innerHTML = dbState.orders.map(o => `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-2.5 font-mono font-bold text-coffee-800">#${o.orderId}</td>
+                        <td class="p-2.5 text-slate-600">${o.createdAt}</td>
+                        <td class="p-2.5 font-semibold">${o.table}</td>
+                        <td class="p-2.5 text-slate-700">${o.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}</td>
+                        <td class="p-2.5">
+                            ${o.method === 'vietqr'
+                                ? `<span class="bg-sky-100 text-sky-800 px-2 py-0.5 rounded-full text-[10px] font-bold">VietQR (${o.bankRef})</span>`
+                                : `<span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full text-[10px] font-bold">Tiền mặt</span>`}
+                        </td>
+                        <td class="p-2.5 text-right font-extrabold text-coffee-900">${o.total.toLocaleString('vi-VN')}đ</td>
+                    </tr>
+                `).join('');
+            }
+            document.getElementById('orderHistoryModal').classList.remove('hidden');
+        }
+
+        function closeOrderHistoryModal() {
+            document.getElementById('orderHistoryModal').classList.add('hidden');
+        }
+
+        /* =====================================================================
+           4. CHẤM CÔNG LƯU TRỮ CSDL
+           ===================================================================== */
+        function renderAttendanceLogs() {
+            const filterEmp = document.getElementById('attFilterEmp') ? document.getElementById('attFilterEmp').value : 'ALL';
+            const logs = filterEmp === 'ALL'
+                ? dbState.attendanceLogs
+                : dbState.attendanceLogs.filter(l => l.empId === filterEmp);
+
+            const table = document.getElementById('attendanceLogTable');
+            table.innerHTML = logs.map(log => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-bold text-slate-800">${log.empId} — ${log.name}</td>
+                    <td class="p-3 text-slate-600">${log.shift}</td>
+                    <td class="p-3 font-mono font-bold text-emerald-600">${log.inTime}</td>
+                    <td class="p-3 font-mono font-bold text-rose-600">${log.outTime}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${log.status === 'Đúng giờ' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">
+                            ${log.status}
+                        </span>
+                    </td>
+                    <td class="p-3 text-slate-500">${log.note || '-'}</td>
+                </tr>
+            `).join('');
+
+            const onTime = dbState.attendanceLogs.filter(l => l.status === 'Đúng giờ').length;
+            const late = dbState.attendanceLogs.filter(l => l.status !== 'Đúng giờ').length;
+            document.getElementById('countOnTime').innerText = onTime;
+            document.getElementById('countLate').innerText = late;
+            document.getElementById('countTotalAtt').innerText = dbState.attendanceLogs.length;
+        }
+
+        function handleAttendance(event) {
+            event.preventDefault();
+            const empSelect = document.getElementById('attEmployeeSelect');
+            const empName = empSelect.options[empSelect.selectedIndex].text.split('—')[1].trim();
+            const empId = empSelect.value;
+            const shift = document.getElementById('attShiftSelect').value;
+            const note = document.getElementById('attNoteInput').value.trim();
+            const action = event.submitter.value;
+            const nowTime = new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+
+            if (action === 'checkin') {
+                dbState.attendanceLogs.unshift({
+                    empId, name: empName, shift, inTime: nowTime, outTime: '--:--', status: 'Đúng giờ', note
+                });
+                persistDatabase(`Check-in ${empName}`);
+                showToast(`Check-in thành công cho ${empName} lúc ${nowTime}`, 'success');
+            } else {
+                const existing = dbState.attendanceLogs.find(l => l.empId === empId && l.outTime === '--:--');
+                if (existing) {
+                    existing.outTime = nowTime;
+                    persistDatabase(`Check-out ${empName}`);
+                    showToast(`Check-out thành công cho ${empName} lúc ${nowTime}`, 'success');
+                } else {
+                    showToast(`Không tìm thấy phiên Check-in chưa đóng của ${empName}`, 'error');
+                }
+            }
+            document.getElementById('attNoteInput').value = '';
+            renderAttendanceLogs();
+        }
+
+        /* =====================================================================
+           5. ĐĂNG KÝ & PHÊ DUYỆT LỊCH LÀM VIỆC THỰC TẾ
+           ===================================================================== */
+        let selectedShiftTarget = null;
+
+        function countPendingShifts() {
+            let count = 0;
+            const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+            dbState.scheduleMatrix.forEach(row => {
+                days.forEach(d => {
+                    const cell = row.shifts[d];
+                    if (cell && cell.status === 'pending') count++;
+                });
+            });
+            return count;
+        }
+
+        function renderScheduleMatrix() {
+            const body = document.getElementById('scheduleMatrixBody');
+            const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+            const pendingCount = countPendingShifts();
+
+            const summaryBadge = document.getElementById('schedulePendingSummary');
+            if (summaryBadge) {
+                summaryBadge.innerText = `${pendingCount} ca chờ duyệt`;
+                summaryBadge.className = pendingCount > 0
+                    ? 'bg-amber-100 text-amber-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-amber-300 animate-pulse'
+                    : 'bg-emerald-100 text-emerald-800 text-[11px] font-bold px-2.5 py-0.5 rounded-full border border-emerald-300';
+            }
+
+            body.innerHTML = dbState.scheduleMatrix.map(row => `
+                <tr class="hover:bg-slate-50">
+                    <td class="p-3 font-bold text-slate-800 border-r border-slate-200 sticky left-0 bg-white">
+                        ${row.name}<br>
+                        <span class="text-[10px] font-normal text-slate-400">${row.role} (${row.empId})</span>
+                    </td>
+                    ${days.map(d => {
+                        const cell = row.shifts[d] || { shift: 'Off', status: 'approved' };
+                        const shiftVal = typeof cell === 'string' ? cell : cell.shift;
+                        const statusVal = typeof cell === 'string' ? 'approved' : cell.status;
+
+                        let badgeClass = 'bg-slate-100 text-slate-500';
+                        if (shiftVal === 'Sáng') badgeClass = 'bg-sky-100 text-sky-800 border border-sky-300';
+                        if (shiftVal === 'Chiều') badgeClass = 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+                        if (shiftVal === 'Đêm') badgeClass = 'bg-purple-100 text-purple-800 border border-purple-300';
+
+                        if (statusVal === 'pending') {
+                            badgeClass = 'bg-amber-100 text-amber-900 border-2 border-amber-400 shadow-sm';
+                        } else if (statusVal === 'rejected') {
+                            badgeClass = 'bg-rose-100 text-rose-800 border border-rose-300 line-through opacity-75';
+                        }
+
+                        const statusTag = statusVal === 'pending'
+                            ? `<span class="block text-[9px] font-extrabold text-amber-700 mt-0.5"><i class="fa-solid fa-clock"></i> Chờ duyệt</span>`
+                            : (statusVal === 'rejected'
+                                ? `<span class="block text-[9px] font-extrabold text-rose-700 mt-0.5">Từ chối</span>`
+                                : (shiftVal !== 'Off' ? `<span class="block text-[9px] font-semibold opacity-70 mt-0.5">Đã duyệt</span>` : ''));
+
+                        return `
+                            <td class="p-2 text-center border-r border-slate-200">
+                                <button type="button" onclick="openShiftApprovalModal('${row.empId}', '${d}')" class="px-2 py-1.5 rounded-lg text-[11px] font-extrabold inline-block w-full transition hover:scale-[1.02] ${badgeClass}">
+                                    ${shiftVal}
+                                    ${statusTag}
+                                </button>
+                            </td>
+                        `;
+                    }).join('')}
+                </tr>
+            `).join('');
+
+            updateBadgesAndStats();
+        }
+
+        function openRegisterShiftModal() {
+            document.getElementById('registerShiftModal').classList.remove('hidden');
+        }
+
+        function closeRegisterShiftModal() {
+            document.getElementById('registerShiftModal').classList.add('hidden');
+        }
+
+        function handleRegisterShift(e) {
+            e.preventDefault();
+            const empId = document.getElementById('regShiftEmp').value;
+            const day = document.getElementById('regShiftDay').value;
+            const shiftType = document.getElementById('regShiftType').value;
+
+            const target = dbState.scheduleMatrix.find(s => s.empId === empId);
+            if (target) {
+                target.shifts[day] = { shift: shiftType, status: 'pending' };
+                persistDatabase(`Đăng ký ca ${shiftType} (${day}) - ${target.name}`);
+                showToast(`Đã gửi đăng ký ca ${shiftType} vào ${day} cho ${target.name} (Chờ duyệt)!`, 'info');
+                renderScheduleMatrix();
+            }
+            closeRegisterShiftModal();
+        }
+
+        function openShiftApprovalModal(empId, day) {
+            if (!hasPermission('schedule_approve')) {
+                showToast('Chỉ tài khoản Quản lý mới có quyền phê duyệt hoặc từ chối lịch làm việc!', 'error');
+                return;
+            }
+            const target = dbState.scheduleMatrix.find(s => s.empId === empId);
+            if (!target) return;
+            const cell = target.shifts[day] || { shift: 'Off', status: 'approved' };
+            selectedShiftTarget = { empId, day };
+
+            const statusLabel = cell.status === 'pending' ? 'Chờ duyệt' : (cell.status === 'rejected' ? 'Đã từ chối' : 'Đã phê duyệt');
+            document.getElementById('shiftApprovalDetails').innerHTML = `
+                <p><strong>Nhân viên:</strong> ${target.name} (${target.role})</p>
+                <p><strong>Ngày trực:</strong> ${day}</p>
+                <p><strong>Ca đăng ký:</strong> ${cell.shift}</p>
+                <p><strong>Trạng thái hiện tại:</strong> <span class="font-bold text-coffee-800">${statusLabel}</span></p>
+            `;
+            document.getElementById('shiftApprovalModal').classList.remove('hidden');
+        }
+
+        function closeShiftApprovalModal() {
+            document.getElementById('shiftApprovalModal').classList.add('hidden');
+            selectedShiftTarget = null;
+        }
+
+        function applySingleShiftDecision(decision) {
+            if (!hasPermission('schedule_approve') || !selectedShiftTarget) return;
+            const target = dbState.scheduleMatrix.find(s => s.empId === selectedShiftTarget.empId);
+            if (target && target.shifts[selectedShiftTarget.day]) {
+                target.shifts[selectedShiftTarget.day].status = decision;
+                const label = decision === 'approved' ? 'Phê duyệt' : 'Từ chối';
+                persistDatabase(`${label} ca ${selectedShiftTarget.day} của ${target.name}`);
+                showToast(`Đã ${label.toLowerCase()} ca ${selectedShiftTarget.day} của ${target.name}!`, decision === 'approved' ? 'success' : 'error');
+                renderScheduleMatrix();
+            }
+            closeShiftApprovalModal();
+        }
+
+        function approveAllShifts() {
+            if (!hasPermission('schedule_approve')) {
+                showToast('Chỉ tài khoản Quản lý mới có quyền phê duyệt lịch làm việc!', 'error');
+                return;
+            }
+            let approvedCount = 0;
+            const days = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
+            dbState.scheduleMatrix.forEach(row => {
+                days.forEach(d => {
+                    if (row.shifts[d] && row.shifts[d].status === 'pending') {
+                        row.shifts[d].status = 'approved';
+                        approvedCount++;
+                    }
+                });
+            });
+
+            if (approvedCount === 0) {
+                showToast('Tất cả ca làm việc trong tuần đều đã được phê duyệt trước đó.', 'info');
+                return;
+            }
+
+            persistDatabase(`Phê duyệt hàng loạt ${approvedCount} ca làm việc`);
+            renderScheduleMatrix();
+            showToast(`Đã phê duyệt thành công ${approvedCount} ca làm việc chờ duyệt và lưu vào CSDL!`, 'success');
+        }
+
+        /* =====================================================================
+           6. BẢNG LƯƠNG NHÂN SỰ (CÓ PHÂN QUYỀN & LƯU CSDL)
+           ===================================================================== */
+        function renderPayrollTable() {
+            const body = document.getElementById('payrollTableBody');
+            let grandTotal = 0;
+            let totalHours = 0;
+            let totalBonus = 0;
+            let totalPenalty = 0;
+
+            const badge = document.getElementById('payrollStatusBadge');
+            const btn = document.getElementById('payrollLockButton');
+            if (dbState.isPayrollLocked) {
+                badge.className = 'bg-rose-100 text-rose-800 text-xs font-bold px-3 py-1.5 rounded-xl border border-rose-200 flex items-center gap-1.5';
+                badge.innerHTML = '<i class="fa-solid fa-lock text-rose-600"></i> Kỳ lương ĐÃ KHÓA (An toàn)';
+                btn.innerHTML = '<i class="fa-solid fa-lock-open"></i> Mở Khóa Kỳ Lương';
+            } else {
+                badge.className = 'bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1.5 rounded-xl border border-amber-200 flex items-center gap-1.5';
+                badge.innerHTML = '<i class="fa-solid fa-lock-open text-amber-600"></i> Kỳ lương đang MỞ (Có thể chỉnh sửa)';
+                btn.innerHTML = '<i class="fa-solid fa-lock"></i> Khóa Kỳ Lương';
+            }
+
+            const canEdit = hasPermission('payroll_edit') && !dbState.isPayrollLocked;
+
+            body.innerHTML = dbState.payrollData.map(p => {
+                const baseSalary = p.rate * p.hours;
+                const netSalary = baseSalary + p.bonus - p.penalty;
+                grandTotal += netSalary;
+                totalHours += p.hours;
+                totalBonus += p.bonus;
+                totalPenalty += p.penalty;
+
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="p-3 font-bold text-slate-800">${p.id} — ${p.name}</td>
+                        <td class="p-3 text-slate-600">${p.role}</td>
+                        <td class="p-3 text-center font-mono">${p.rate.toLocaleString('vi-VN')}đ</td>
+                        <td class="p-3 text-center font-bold text-slate-800">${p.hours}h</td>
+                        <td class="p-3 text-right font-mono">${baseSalary.toLocaleString('vi-VN')}đ</td>
+                        <td class="p-3 text-right text-emerald-600 font-mono">+${p.bonus.toLocaleString('vi-VN')}đ</td>
+                        <td class="p-3 text-right text-rose-600 font-mono">-${p.penalty.toLocaleString('vi-VN')}đ</td>
+                        <td class="p-3 text-right font-extrabold text-coffee-800 text-sm font-mono">${netSalary.toLocaleString('vi-VN')}đ</td>
+                        <td class="p-3 text-center">
+                            <button onclick="editPayrollBonus('${p.id}')" ${!canEdit ? 'disabled' : ''} class="text-xs text-slate-600 hover:text-coffee-800 font-bold p-1 ${!canEdit ? 'opacity-40 cursor-not-allowed' : ''}">
+                                <i class="fa-solid fa-pen-to-square"></i> Thưởng/Phạt
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('payrollTotalFund').innerText = `${grandTotal.toLocaleString('vi-VN')}đ`;
+            document.getElementById('payrollTotalHours').innerText = `${totalHours} Giờ`;
+            document.getElementById('payrollTotalBonus').innerText = `+${totalBonus.toLocaleString('vi-VN')}đ`;
+            document.getElementById('payrollTotalPenalty').innerText = `-${totalPenalty.toLocaleString('vi-VN')}đ`;
+        }
+
+        function togglePayrollLock() {
+            if (!hasPermission('payroll_edit')) {
+                showToast('Chỉ tài khoản Quản lý mới có quyền khóa/mở khóa kỳ lương!', 'error');
+                return;
+            }
+            dbState.isPayrollLocked = !dbState.isPayrollLocked;
+            persistDatabase(dbState.isPayrollLocked ? 'Khóa kỳ lương' : 'Mở khóa kỳ lương');
+            renderPayrollTable();
+            showToast(dbState.isPayrollLocked ? 'Đã khóa kỳ lương an toàn!' : 'Đã mở khóa kỳ lương để chỉnh sửa.', 'info');
+        }
+
+        function editPayrollBonus(empId) {
+            if (!hasPermission('payroll_edit')) {
+                showToast('Bạn không có quyền chỉnh sửa thưởng/phạt!', 'error');
+                return;
+            }
+            if (dbState.isPayrollLocked) return;
+            const p = dbState.payrollData.find(x => x.id === empId);
+            if (!p) return;
+
+            const newBonus = prompt(`Nhập tiền thưởng/phụ cấp mới cho ${p.name}:`, p.bonus);
+            if (newBonus !== null) {
+                p.bonus = parseFloat(newBonus) || 0;
+                persistDatabase(`Cập nhật thưởng lương cho ${p.name}`);
+                renderPayrollTable();
+                showToast(`Đã cập nhật thưởng cho ${p.name}!`, 'success');
+            }
+        }
+
+        /* =====================================================================
+           7. BIỂU MẪU LIÊN HỆ KẾT NỐI HỆ THỐNG TIẾP NHẬN THÔNG TIN THỰC TẾ
+           ===================================================================== */
+        function handleContactSubmit(e) {
+            e.preventDefault();
+            const name = document.getElementById('contactName').value.trim();
+            const phone = document.getElementById('contactPhone').value.trim();
+            const topic = document.getElementById('contactTopic').value;
+            const message = document.getElementById('contactMessage').value.trim();
+
+            const ticket = {
+                ticketId: 'LH-' + Math.floor(1000 + Math.random() * 9000),
+                name,
+                phone,
+                topic,
+                message,
+                createdAt: new Date().toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }),
+                status: 'Mới tiếp nhận'
+            };
+
+            dbState.contactMessages.unshift(ticket);
+            persistDatabase(`Tiếp nhận phiếu liên hệ #${ticket.ticketId}`);
+            e.target.reset();
+            renderContactMessages();
+            showToast(`Đã tiếp nhận thông tin (#${ticket.ticketId}) vào hệ thống CSKH!`, 'success');
+        }
+
+        function renderContactMessages() {
+            const tbody = document.getElementById('contactMessagesTableBody');
+            if (!tbody) return;
+            const filterVal = document.getElementById('contactFilterStatus') ? document.getElementById('contactFilterStatus').value : 'ALL';
+            const list = filterVal === 'ALL'
+                ? dbState.contactMessages
+                : dbState.contactMessages.filter(m => m.status === filterVal);
+
+            const canManage = hasPermission('contact_manage');
+
+            if (list.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-4 text-center text-coffee-400">Chưa có tin nhắn liên hệ nào phù hợp bộ lọc.</td></tr>`;
+            } else {
+                tbody.innerHTML = list.map(m => {
+                    let statusBadge = 'bg-amber-100 text-amber-800 border border-amber-300';
+                    if (m.status === 'Đang xử lý') statusBadge = 'bg-sky-100 text-sky-800 border border-sky-300';
+                    if (m.status === 'Đã phản hồi') statusBadge = 'bg-emerald-100 text-emerald-800 border border-emerald-300';
+
+                    return `
+                        <tr class="hover:bg-coffee-50/70">
+                            <td class="p-3 font-mono font-bold text-coffee-800">${m.ticketId}</td>
+                            <td class="p-3">
+                                <span class="font-bold text-coffee-900 block">${m.name}</span>
+                                <a href="tel:${m.phone}" class="text-[11px] text-sky-700 font-semibold hover:underline"><i class="fa-solid fa-phone mr-1"></i>${m.phone}</a>
+                            </td>
+                            <td class="p-3 font-semibold text-coffee-700">${m.topic}</td>
+                            <td class="p-3 text-coffee-800 max-w-xs">${m.message}</td>
+                            <td class="p-3 text-[11px] text-coffee-500">${m.createdAt}</td>
+                            <td class="p-3">
+                                <span class="px-2.5 py-1 rounded-full text-[10px] font-bold inline-block ${statusBadge}">${m.status}</span>
+                            </td>
+                            <td class="p-3 text-center">
+                                <div class="flex items-center justify-center gap-1.5">
+                                    <select onchange="updateContactStatus('${m.ticketId}', this.value)" ${!canManage ? 'disabled' : ''} class="px-2 py-1 rounded-lg border border-coffee-200 text-[11px] bg-white font-semibold ${!canManage ? 'opacity-40 cursor-not-allowed' : ''}">
+                                        <option value="Mới tiếp nhận" ${m.status === 'Mới tiếp nhận' ? 'selected' : ''}>Mới tiếp nhận</option>
+                                        <option value="Đang xử lý" ${m.status === 'Đang xử lý' ? 'selected' : ''}>Đang xử lý</option>
+                                        <option value="Đã phản hồi" ${m.status === 'Đã phản hồi' ? 'selected' : ''}>Đã phản hồi</option>
+                                    </select>
+                                    ${hasPermission('db_admin') ? `<button onclick="deleteContactTicket('${m.ticketId}')" class="text-rose-600 hover:text-rose-800 p-1" title="Xóa phiếu"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+            updateBadgesAndStats();
+        }
+
+        function updateContactStatus(ticketId, newStatus) {
+            if (!hasPermission('contact_manage')) return;
+            const item = dbState.contactMessages.find(m => m.ticketId === ticketId);
+            if (item) {
+                item.status = newStatus;
+                persistDatabase(`Cập nhật phiếu ${ticketId} -> ${newStatus}`);
+                renderContactMessages();
+                showToast(`Đã cập nhật trạng thái ${ticketId} thành "${newStatus}"`, 'success');
+            }
+        }
+
+        function deleteContactTicket(ticketId) {
+            if (!hasPermission('db_admin')) return;
+            dbState.contactMessages = dbState.contactMessages.filter(m => m.ticketId !== ticketId);
+            persistDatabase(`Xóa phiếu liên hệ ${ticketId}`);
+            renderContactMessages();
+            showToast(`Đã xóa phiếu ${ticketId}`, 'info');
+        }
+
+        /* =====================================================================
+           8. KHO, BÀN, CHI PHÍ & DASHBOARD (BỔ SUNG)
+           ===================================================================== */
+        const recipeBook = {
+            1:[['NL001',20],['NL005',5]], 2:[['NL001',18],['NL005',5]], 3:[['NL001',18],['NL002',25],['NL003',80]],
+            4:[['NL001',20],['NL002',30]], 5:[['NL001',22]], 6:[['NL001',18]],
+            7:[['NL004',15],['NL005',10]], 8:[['NL004',15],['NL005',10]], 9:[['NL006',1]], 10:[['NL006',1]]
+        };
+        const cafeTables = ['Bàn Gỗ 01','Bàn Gỗ 02','Góc Ban Công','Sân Vườn Mộc'];
+        function money(v){ return (Number(v)||0).toLocaleString('vi-VN')+'đ'; }
+        function safeText(v){ return String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+        function stockItem(id){ return dbState.inventory.find(x=>x.id===id); }
+        function renderInventory(){
+            const body=document.getElementById('inventoryTable'); if(!body)return;
+            body.innerHTML=dbState.inventory.map(x=>`<tr><td class="p-3 font-bold">${safeText(x.name)}</td><td class="p-3">${x.qty.toLocaleString('vi-VN')}</td><td class="p-3">${safeText(x.unit)}</td><td class="p-3">${x.min.toLocaleString('vi-VN')}</td><td class="p-3">${x.qty<=x.min?'<span class="text-rose-700 font-bold">Sắp hết</span>':'<span class="text-emerald-700 font-bold">Đủ hàng</span>'}</td><td class="p-3"><button onclick="stockAdjustment('${x.id}')" class="text-blue-700 font-bold">Điều chỉnh</button></td></tr>`).join('');
+            document.getElementById('recipeList').innerHTML=productsData.map(p=>`<div class="bg-coffee-50 rounded-lg p-2"><b>${safeText(p.name)}</b><div>${(recipeBook[p.id]||[]).map(([id,q])=>{const x=stockItem(id);return `${safeText(x?.name||id)}: ${q}${x?.unit||''}`}).join(' • ')||'Chưa thiết lập'}</div></div>`).join('');
+            document.getElementById('stockHistory').innerHTML=dbState.stockHistory.slice(0,20).map(h=>`<div class="border-b pb-2 flex justify-between gap-2"><span>${safeText(h.note)} · ${safeText(h.itemName)}</span><b class="${h.delta>=0?'text-emerald-700':'text-rose-700'}">${h.delta>0?'+':''}${h.delta} ${safeText(h.unit)}</b></div>`).join('')||'<p class="text-slate-400">Chưa có giao dịch kho.</p>';
+        }
+        function openStockInForm(){
+            if(!hasPermission('db_admin')) return showToast('Chỉ quản lý mới được nhập kho.','error');
+            const itemName=prompt('Tên nguyên liệu mới hoặc đúng tên nguyên liệu hiện có:'); if(!itemName)return;
+            const existing=dbState.inventory.find(x=>x.name.toLowerCase()===itemName.trim().toLowerCase());
+            const raw=prompt(`Số lượng nhập (${existing?.unit||'đơn vị'}):`,'1000'); const qty=Number(raw); if(!Number.isFinite(qty)||qty<=0)return showToast('Số lượng nhập không hợp lệ.','error');
+            let item=existing;
+            if(!item){const unit=prompt('Đơn vị tính (g/ml/cái/kg...):','g')||'đơn vị';item={id:'NL'+Date.now(),name:itemName.trim(),qty:0,unit,min:100};dbState.inventory.push(item);}
+            item.qty+=qty; dbState.stockHistory.unshift({date:new Date().toISOString(),itemId:item.id,itemName:item.name,delta:qty,unit:item.unit,note:'Nhập kho'}); persistDatabase('Nhập kho '+item.name); renderInventory(); renderDashboard(); showToast('Đã ghi nhận nhập kho.');
+        }
+        function stockAdjustment(id){
+            if(!hasPermission('db_admin'))return showToast('Chỉ quản lý mới được điều chỉnh kho.','error');
+            const item=stockItem(id); if(!item)return; const raw=prompt(`Nhập số lượng thay đổi cho ${item.name}. Dùng số âm để giảm:`, '0'); const delta=Number(raw); if(!Number.isFinite(delta)||delta===0)return;
+            if(item.qty+delta<0)return showToast('Tồn kho không thể âm.','error'); item.qty+=delta; dbState.stockHistory.unshift({date:new Date().toISOString(),itemId:id,itemName:item.name,delta,unit:item.unit,note:'Điều chỉnh tồn kho'}); persistDatabase('Điều chỉnh kho'); renderInventory(); renderDashboard();
+        }
+        function deductRecipeFromOrder(order){
+            const deductions=[];
+            order.items.forEach(line=>{(recipeBook[line.id]||[]).forEach(([id,amount])=>{const x=stockItem(id);if(x)deductions.push({item:x,qty:amount*line.quantity});});});
+            const totals={}; deductions.forEach(d=>totals[d.item.id]=(totals[d.item.id]||0)+d.qty);
+            const shortage=Object.entries(totals).filter(([id,q])=>stockItem(id).qty<q);
+            if(shortage.length){showToast('Không đủ tồn kho: '+shortage.map(([id,q])=>stockItem(id).name).join(', ')+'. Quản lý cần nhập kho.','error');return false;}
+            deductions.forEach(d=>{d.item.qty-=d.qty;dbState.stockHistory.unshift({date:new Date().toISOString(),itemId:d.item.id,itemName:d.item.name,delta:-d.qty,unit:d.item.unit,note:'Xuất kho theo đơn '+order.orderId});});
+            return true;
+        }
+        function renderTables(){
+            const board=document.getElementById('tableBoard'); if(!board)return;
+            const active=dbState.orders.filter(o=>cafeTables.includes(o.table)&&['open','serving'].includes(o.status));
+            board.innerHTML=cafeTables.map(t=>{const o=active.find(x=>x.table===t);const occupied=dbState.tableStatuses[t]==='occupied';const st=o?'Đang phục vụ':(occupied?'Đang sử dụng':'Trống');return `<div class="rounded-2xl border p-4 ${o||occupied?'border-rose-300 bg-rose-50':'border-emerald-200 bg-emerald-50'}"><div class="text-2xl mb-2"><i class="fa-solid fa-chair"></i></div><b>${safeText(t)}</b><p class="text-xs mt-1 ${o||occupied?'text-rose-700':'text-emerald-700'}">${st}</p>${o?`<p class="text-[11px] mt-2">Đơn #${safeText(o.orderId)} · ${money(o.total)}</p>`:''}<button onclick="toggleTableStatus('${safeText(t)}')" class="mt-3 text-[11px] font-bold underline">${occupied?'Đánh dấu trống':'Đánh dấu đang sử dụng'}</button></div>`}).join('');
+            document.getElementById('activeTableOrders').innerHTML=active.map(o=>`<div class="flex justify-between border-b pb-2"><span>#${safeText(o.orderId)} · ${safeText(o.table)} · ${safeText(o.cashier||'')}</span><b>${money(o.total)}</b></div>`).join('')||'<p class="text-slate-400">Không có đơn tại bàn đang mở.</p>';
+        }
+        function toggleTableStatus(t){dbState.tableStatuses[t]=dbState.tableStatuses[t]==='occupied'?'available':'occupied';persistDatabase('Cập nhật trạng thái bàn');renderTables();}
+        function addExpense(e){e.preventDefault();if(!hasPermission('db_admin'))return showToast('Chỉ quản lý mới được ghi nhận chi phí.','error');const amount=Number(document.getElementById('expenseAmount').value);if(amount<=0)return;dbState.expenses.unshift({id:'CP'+Date.now(),title:document.getElementById('expenseTitle').value.trim(),category:document.getElementById('expenseCategory').value,amount,supplier:document.getElementById('expenseSupplier').value.trim(),reference:document.getElementById('expenseReference')?.value.trim()||'',date:document.getElementById('expenseDate').value,createdBy:currentUser.name});persistDatabase('Thêm chi phí');e.target.reset();document.getElementById('expenseDate').value=new Date().toISOString().slice(0,10);renderExpenses();renderDashboard();showToast('Đã lưu khoản chi.');}
+        function addSupplier(e){e.preventDefault();if(!hasPermission('db_admin'))return showToast('Chỉ quản lý mới được quản lý nhà cung cấp.','error');dbState.suppliers.unshift({id:'NCC'+Date.now(),name:document.getElementById('supplierName').value.trim(),phone:document.getElementById('supplierPhone').value.trim(),items:document.getElementById('supplierItems').value.trim()});persistDatabase('Thêm nhà cung cấp');e.target.reset();renderExpenses();showToast('Đã lưu nhà cung cấp.');}
+        function renderExpenses(){const a=document.getElementById('expenseList'),b=document.getElementById('supplierList');if(!a||!b)return;a.innerHTML=`<table class="w-full text-xs"><thead><tr class="text-left bg-coffee-50"><th class="p-2">Ngày</th><th class="p-2">Nội dung</th><th class="p-2">Nhóm</th><th class="p-2">Nhà cung cấp</th><th class="p-2">Chứng từ</th><th class="p-2 text-right">Số tiền</th></tr></thead><tbody>${dbState.expenses.map(x=>`<tr class="border-b"><td class="p-2">${safeText(x.date)}</td><td class="p-2">${safeText(x.title)}</td><td class="p-2">${safeText(x.category)}</td><td class="p-2">${safeText(x.supplier)}</td><td class="p-2">${safeText(x.reference||x.sourcePurchaseId||'—')}</td><td class="p-2 text-right font-bold">${money(x.amount)}</td></tr>`).join('')}</tbody></table>`;b.innerHTML=dbState.suppliers.map(x=>`<div class="border-b pb-2"><b>${safeText(x.name)}</b> · ${safeText(x.phone)}<p class="text-slate-500">${safeText(x.items)}</p></div>`).join('')||'<p class="text-slate-400">Chưa có nhà cung cấp.</p>';}
+        function renderDashboard(){const rev=dbState.orders.filter(o=>o.method==='cash'||o.method==='vietqr').reduce((n,o)=>n+(Number(o.total)||0),0),cost=dbState.expenses.reduce((n,x)=>n+(Number(x.amount)||0),0),low=dbState.inventory.filter(x=>x.qty<=x.min);document.getElementById('dashRevenue').innerText=money(rev);document.getElementById('dashOrders').innerText=dbState.orders.length;document.getElementById('dashExpenses').innerText=money(cost);document.getElementById('dashLowStock').innerText=low.length;const counts={};dbState.orders.forEach(o=>(o.items||[]).forEach(i=>counts[i.name]=(counts[i.name]||0)+i.quantity));document.getElementById('dashTopProducts').innerHTML=Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([n,q])=>`<div class="flex justify-between border-b pb-1"><span>${safeText(n)}</span><b>${q} phần</b></div>`).join('')||'<p class="text-slate-400">Chưa có dữ liệu.</p>';document.getElementById('dashStockAlerts').innerHTML=low.map(x=>`<div class="flex justify-between text-rose-700"><span>${safeText(x.name)}</span><b>${x.qty} ${safeText(x.unit)}</b></div>`).join('')||'<p class="text-emerald-700">Tồn kho đang trên mức tối thiểu.</p>';}
+        function addStaffProfile(e){e.preventDefault();if(!hasPermission('db_admin'))return showToast('Chỉ quản lý mới được thêm hồ sơ.','error');const id=document.getElementById('staffId').value.trim();if(dbState.staffProfiles.some(x=>x.id===id))return showToast('Mã nhân viên đã tồn tại.','error');dbState.staffProfiles.push({id,name:document.getElementById('staffName').value.trim(),phone:document.getElementById('staffPhone').value.trim(),position:document.getElementById('staffPosition').value});persistDatabase('Thêm hồ sơ nhân viên');e.target.reset();renderStaffPlus();}
+        function addStaffRequest(e){e.preventDefault();const employee=document.getElementById('requestEmployee').value.trim();dbState.staffRequests.unshift({id:'YC'+Date.now(),type:document.getElementById('requestType').value,employee,date:document.getElementById('requestDate').value,note:document.getElementById('requestNote').value.trim(),status:'Chờ duyệt',createdBy:currentUser.name});persistDatabase('Gửi yêu cầu nhân sự');e.target.reset();renderStaffPlus();showToast('Đã gửi yêu cầu, chờ quản lý duyệt.');}
+        function decideStaffRequest(id,status){if(!hasPermission('schedule_approve'))return showToast('Bạn không có quyền duyệt yêu cầu.','error');const r=dbState.staffRequests.find(x=>x.id===id);if(!r)return;r.status=status;persistDatabase('Duyệt yêu cầu nhân sự');renderStaffPlus();}
+        function renderStaffPlus(){const a=document.getElementById('staffProfileList'),b=document.getElementById('staffRequestList');if(!a||!b)return;a.innerHTML=dbState.staffProfiles.map(x=>`<div class="border-b pb-2"><b>${safeText(x.id)} · ${safeText(x.name)}</b><p>${safeText(x.position)} · ${safeText(x.phone)}</p></div>`).join('')||'<p class="text-slate-400">Chưa có hồ sơ bổ sung.</p>';b.innerHTML=dbState.staffRequests.map(x=>`<div class="border-b pb-2"><div class="flex justify-between gap-2"><b>${safeText(x.type)} · ${safeText(x.employee)}</b><span>${safeText(x.status)}</span></div><p>${safeText(x.date)} · ${safeText(x.note)}</p>${x.status==='Chờ duyệt'?`<div class="flex gap-2 mt-1"><button onclick="decideStaffRequest('${x.id}','Đã duyệt')" class="text-emerald-700 font-bold">Duyệt</button><button onclick="decideStaffRequest('${x.id}','Từ chối')" class="text-rose-700 font-bold">Từ chối</button></div>`:''}</div>`).join('')||'<p class="text-slate-400">Chưa có yêu cầu.</p>';}
+        function renderNewModules(){renderInventory();renderTables();renderExpenses();renderDashboard();renderStaffPlus();}
+
+        /* =====================================================================
+           8. KHO, BÀN, CHI PHÍ & DASHBOARD (BỔ SUNG)
+           ===================================================================== */
+        function renderNewModules(){renderInventory();renderTables();renderExpenses();renderDashboard();renderStaffPlus();renderProcurement();renderReports();}
+        function renderProcurement(){
+            const supplierSelect=document.getElementById('purchaseSupplier');
+            if(supplierSelect){const current=supplierSelect.value;supplierSelect.innerHTML='<option value="">Chọn nhà cung cấp</option>'+dbState.suppliers.map(x=>`<option value="${safeText(x.id)}">${safeText(x.name)}</option>`).join('');if(dbState.suppliers.some(x=>x.id===current))supplierSelect.value=current;}
+            const itemSelect=document.getElementById('purchaseItem');
+            if(itemSelect){const current=itemSelect.value;itemSelect.innerHTML=dbState.inventory.map(x=>`<option value="${safeText(x.id)}">${safeText(x.name)} (${safeText(x.unit)})</option>`).join('');if(dbState.inventory.some(x=>x.id===current))itemSelect.value=current;}
+            const list=document.getElementById('purchaseList');if(list)list.innerHTML=dbState.purchaseReceipts.slice(0,30).map(x=>`<div class="border-b py-2 flex justify-between gap-2"><div><b>${safeText(x.receiptId)}</b><p>${safeText(x.itemName)} · ${safeText(x.supplierName)} · ${safeText(x.date)}</p></div><div class="text-right"><b>${money(x.total)}</b><p>${x.qty} ${safeText(x.unit)}</p></div></div>`).join('')||'<p class="text-slate-400">Chưa có phiếu nhập.</p>';
+        }
+        function receivePurchase(e){
+            e.preventDefault();if(!hasPermission('db_admin'))return showToast('Chỉ quản lý mới được xác nhận phiếu nhập.','error');
+            const supplier=dbState.suppliers.find(x=>x.id===document.getElementById('purchaseSupplier').value);const item=stockItem(document.getElementById('purchaseItem').value);const qty=Number(document.getElementById('purchaseQty').value);const unitCost=Number(document.getElementById('purchaseUnitCost').value);const date=document.getElementById('purchaseDate').value;
+            if(!supplier||!item||!Number.isFinite(qty)||qty<=0||!Number.isFinite(unitCost)||unitCost<0||!date)return showToast('Vui lòng kiểm tra nhà cung cấp, nguyên liệu, số lượng, đơn giá và ngày nhập.','error');
+            const total=qty*unitCost;item.qty=Number(item.qty||0)+qty;const receipt={receiptId:'PN'+Date.now(),supplierId:supplier.id,supplierName:supplier.name,itemId:item.id,itemName:item.name,qty,unit:item.unit,unitCost,total,date,createdBy:currentUser.name};
+            dbState.purchaseReceipts.unshift(receipt);dbState.stockHistory.unshift({date:new Date().toISOString(),itemId:item.id,itemName:item.name,delta:qty,unit:item.unit,note:'Nhập theo phiếu '+receipt.receiptId});dbState.expenses.unshift({id:'CP'+Date.now(),title:'Nhập hàng: '+item.name,category:'Nguyên liệu',amount:total,supplier:supplier.name,date,createdBy:currentUser.name,sourcePurchaseId:receipt.receiptId});
+            persistDatabase('Xác nhận phiếu nhập '+receipt.receiptId);e.target.reset();const d=document.getElementById('purchaseDate');if(d)d.value=new Date().toISOString().slice(0,10);renderNewModules();showToast('Đã nhập kho và ghi nhận chi phí mua hàng.','success');
+        }
+        function renderReports(){
+            const orders=dbState.orders.filter(o=>o.status!=='cancelled'&&o.status!=='refunded');const revenue=orders.reduce((n,o)=>n+(Number(o.total)||0),0);const costs=dbState.expenses.reduce((n,x)=>n+(Number(x.amount)||0),0);const set=(id,v)=>{const el=document.getElementById(id);if(el)el.innerText=v;};set('reportRevenue',money(revenue));set('reportCosts',money(costs));set('reportProfit',money(revenue-costs));set('reportOrderCount',orders.length);
+            const daily=document.getElementById('reportDaily');if(daily){const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const key=d.toLocaleDateString('vi-VN');const total=orders.filter(o=>(o.createdAt||'').includes(key)).reduce((n,o)=>n+(Number(o.total)||0),0);days.push({key,total});}const max=Math.max(1,...days.map(x=>x.total));daily.innerHTML=days.map(x=>`<div><div class="flex justify-between text-xs mb-1"><span>${safeText(x.key)}</span><b>${money(x.total)}</b></div><div class="h-2 bg-coffee-100 rounded-full overflow-hidden"><div class="h-full bg-coffee-600 rounded-full" style="width:${Math.max(0,x.total/max*100)}%"></div></div></div>`).join('');}
+            const cats=document.getElementById('reportCategoryCosts');if(cats){const sums={};dbState.expenses.forEach(x=>sums[x.category]=(sums[x.category]||0)+Number(x.amount||0));cats.innerHTML=Object.entries(sums).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="flex justify-between border-b pb-1"><span>${safeText(k)}</span><b>${money(v)}</b></div>`).join('')||'<p class="text-slate-400">Chưa có dữ liệu chi phí.</p>';}
+        }
+        function exportReportCSV(){const rows=[['Loại','Ngày','Mã','Nội dung','Số tiền'],...dbState.orders.map(o=>['Doanh thu',o.createdAt||'',o.orderId||'',(o.items||[]).map(i=>i.name+' x'+i.quantity).join('; '),o.total||0]),...dbState.expenses.map(x=>['Chi phí',x.date||'',x.id||'',x.title||'',x.amount||0])];const csv='\uFEFF'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));const a=document.createElement('a');a.href=url;a.download='Bao_cao_Ngam_Ca_Phe.csv';a.click();URL.revokeObjectURL(url);}
+        
+
+        /* =====================================================================
+           8. QUẢN TRỊ CSDL, ĐỒNG BỘ ĐA THIẾT BỊ & CẤU HÌNH VIETQR
+           ===================================================================== */
+        function updateBadgesAndStats() {
+            const pendingShifts = countPendingShifts();
+            const shiftBadge = document.getElementById('pendingShiftBadge');
+            if (shiftBadge) {
+                shiftBadge.innerText = pendingShifts;
+                shiftBadge.classList.toggle('hidden', pendingShifts === 0);
+            }
+
+            const newContacts = dbState.contactMessages.filter(m => m.status === 'Mới tiếp nhận').length;
+            const contactBadge = document.getElementById('newContactBadge');
+            if (contactBadge) {
+                contactBadge.innerText = newContacts;
+                contactBadge.classList.toggle('hidden', newContacts === 0);
+            }
+
+            const orderCountEl = document.getElementById('orderHistoryCount');
+            if (orderCountEl) orderCountEl.innerText = dbState.orders.length;
+
+            if (document.getElementById('dbStatOrders')) {
+                document.getElementById('dbStatOrders').innerText = dbState.orders.length;
+                document.getElementById('dbStatAttendance').innerText = dbState.attendanceLogs.length;
+                document.getElementById('dbStatSchedules').innerText = dbState.scheduleMatrix.length;
+                document.getElementById('dbStatContacts').innerText = dbState.contactMessages.length;
+            }
+        }
+
+        function openSystemSyncModal() {
+            updateBadgesAndStats();
+            document.getElementById('cloudSyncUrlInput').value = dbState.cloudSyncUrl || '';
+            document.getElementById('cfgBankId').value = dbState.bankConfig.bankId || 'MB';
+            document.getElementById('cfgAccountNo').value = dbState.bankConfig.accountNo || '';
+            document.getElementById('cfgAccountName').value = dbState.bankConfig.accountName || '';
+            document.getElementById('systemSyncModal').classList.remove('hidden');
+        }
+
+        function closeSystemSyncModal() {
+            document.getElementById('systemSyncModal').classList.add('hidden');
+        }
+
+        function generateDeviceSyncToken() {
+            const jsonStr = JSON.stringify(dbState);
+            const encoded = btoa(unescape(encodeURIComponent(jsonStr)));
+            const input = document.getElementById('syncTokenOutput');
+            input.value = encoded;
+            input.select();
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(encoded).catch(() => {});
+            }
+            showToast('Đã tạo & sao chép Mã Đồng Bộ Thiết Bị vào bộ nhớ tạm!', 'success');
+        }
+
+        function importDeviceSyncToken() {
+            const raw = document.getElementById('syncTokenInput').value.trim();
+            if (!raw) {
+                showToast('Vui lòng dán Mã Đồng Bộ từ thiết bị khác!', 'error');
+                return;
+            }
+            try {
+                const decoded = decodeURIComponent(escape(atob(raw)));
+                const parsed = JSON.parse(decoded);
+                if (!parsed || !parsed.scheduleMatrix || !parsed.attendanceLogs) {
+                    throw new Error('Cấu trúc dữ liệu không hợp lệ');
+                }
+                dbState = { ...getDefaultDatabaseState(), ...parsed };
+                persistDatabase('Đồng bộ dữ liệu từ thiết bị khác');
+                refreshAllViews();
+                document.getElementById('syncTokenInput').value = '';
+                showToast('Đồng bộ dữ liệu từ thiết bị khác thành công!', 'success');
+            } catch (err) {
+                showToast('Mã đồng bộ không hợp lệ hoặc bị lỗi định dạng!', 'error');
+            }
+        }
+
+        function saveCloudSyncUrl() {
+            if (!hasPermission('db_admin')) {
+                showToast('Chỉ Quản lý mới có quyền cấu hình Cloud Sync!', 'error');
+                return;
+            }
+            const url = document.getElementById('cloudSyncUrlInput').value.trim();
+            dbState.cloudSyncUrl = url;
+            persistDatabase('Cập nhật Cloud Sync URL');
+            showToast(url ? 'Đã lưu Cloud Sync Endpoint!' : 'Đã tắt Cloud Sync Endpoint.', 'success');
+        }
+
+        function saveBankConfig() {
+            if (!hasPermission('db_admin')) {
+                showToast('Chỉ Quản lý mới có quyền cấu hình tài khoản ngân hàng!', 'error');
+                return;
+            }
+            const bankSelect = document.getElementById('cfgBankId');
+            const bankId = bankSelect.value;
+            const bankName = bankSelect.options[bankSelect.selectedIndex].text;
+            const accountNo = document.getElementById('cfgAccountNo').value.trim();
+            const accountName = document.getElementById('cfgAccountName').value.trim().toUpperCase();
+            if (!accountNo || !accountName) {
+                showToast('Vui lòng nhập đầy đủ số tài khoản và tên chủ tài khoản!', 'error');
+                return;
+            }
+            dbState.bankConfig = { bankId, bankName, accountNo, accountName };
+            persistDatabase('Cập nhật cấu hình ngân hàng VietQR');
+            showToast('Đã lưu cấu hình tài khoản ngân hàng VietQR!', 'success');
+        }
+
+        function exportDatabaseFile() {
+            const blob = new Blob([JSON.stringify(dbState, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `NgamCaPhe_CSDL_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showToast('Đã xuất tệp sao lưu cơ sở dữ liệu (.JSON)!', 'success');
+        }
+
+        function importDatabaseFile(event) {
+            if (!hasPermission('db_admin')) {
+                showToast('Chỉ Quản lý mới có quyền khôi phục CSDL!', 'error');
+                return;
+            }
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    dbState = { ...getDefaultDatabaseState(), ...parsed };
+                    persistDatabase('Khôi phục CSDL từ tệp JSON');
+                    refreshAllViews();
+                    showToast('Đã nhập và khôi phục cơ sở dữ liệu thành công!', 'success');
+                } catch (err) {
+                    showToast('Tệp JSON không đúng định dạng CSDL của Ngâm Cà Phê!', 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function resetDatabaseToDefault() {
+            if (!hasPermission('db_admin')) {
+                showToast('Chỉ Quản lý mới có quyền đặt lại CSDL!', 'error');
+                return;
+            }
+            if (!confirm('Bạn có chắc chắn muốn khôi phục toàn bộ cơ sở dữ liệu về trạng thái mặc định ban đầu?')) return;
+            dbState = getDefaultDatabaseState();
+            persistDatabase('Khôi phục CSDL mặc định');
+            refreshAllViews();
+            showToast('Đã khôi phục cơ sở dữ liệu mặc định!', 'info');
+        }
+
+        function refreshAllViews() {
+            renderCart();
+            renderAttendanceLogs();
+            renderScheduleMatrix();
+            renderPayrollTable();
+            renderContactMessages();
+            renderNewModules();
+            updateBadgesAndStats();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            startClock();
+            renderProducts(productsData);
+            applyRolePermissionsUI();
+            refreshAllViews();
+            const expenseDate=document.getElementById('expenseDate'); if(expenseDate) expenseDate.value=new Date().toISOString().slice(0,10); const purchaseDate=document.getElementById('purchaseDate'); if(purchaseDate) purchaseDate.value=new Date().toISOString().slice(0,10);
+            renderNewModules();
+        });
+    </script>
+</body>
+</html>
